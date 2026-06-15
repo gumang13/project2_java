@@ -1,4 +1,4 @@
-package setting.dto;
+package com.setting.dto;
 
 public class SettingCalibrationRequest {
 }

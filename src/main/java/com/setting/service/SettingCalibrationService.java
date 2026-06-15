@@ -1,4 +1,4 @@
-package setting.service;
+package com.setting.service;
 
 public class SettingCalibrationService {
 }

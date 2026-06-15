@@ -1,8 +1,8 @@
-package setting.repository;
+package com.setting.repository;
 
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import setting.entity.SettingCalibration;
+import com.setting.entity.SettingCalibration;
 
 import java.util.Optional;
 

@@ -1,8 +1,8 @@
-package setting.dto;
+package com.setting.dto;
 
 import lombok.Builder;
 import lombok.Getter;
-import setting.entity.SettingCalibration;
+import com.setting.entity.SettingCalibration;
 
 @Getter
 @Builder
