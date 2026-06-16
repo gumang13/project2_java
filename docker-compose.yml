@@ -4,6 +4,8 @@ services:
     container_name: nginx-server
     ports:
       - "80:80"
+    volumes:
+      - ./nginx/html:/usr/share/nginx/html:ro  
     depends_on:
       - springboot-server
     restart: always
