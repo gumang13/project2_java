@@ -14,6 +14,7 @@ public class CustomUserDetails implements UserDetails {
     private final String username;
     private final String password;
 
+
     public CustomUserDetails(String username, String password) {
         this.username = username;
         this.password = password;
