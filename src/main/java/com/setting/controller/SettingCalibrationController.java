@@ -15,7 +15,7 @@ public class SettingCalibrationController {
     private final SettingCalibrationService settingCalibrationService;
 
     // 캘리브레이션 기준값 조회
-    @GetMapping("/settings/{memberId}/calibration")
+    @GetMapping("/settings/calibration/{memberId}")
     public ResponseEntity<SettingCalibrationResponse> getCalibration(
             @PathVariable Long memberId
     ) {
@@ -26,7 +26,7 @@ public class SettingCalibrationController {
     }
 
     // 캘리브레이션 재설정
-    @DeleteMapping("/settings/{memberId}/calibration")
+    @DeleteMapping("/settings/calibration/{memberId}")
     public ResponseEntity<Map<String, String>> resetCalibration(
             @PathVariable Long memberId
     ) {
