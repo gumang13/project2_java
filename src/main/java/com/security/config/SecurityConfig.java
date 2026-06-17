@@ -15,7 +15,7 @@ public class SecurityConfig {
                 // URL별 접근 권한 설정
                 .authorizeHttpRequests(auth -> auth
 
-                        .requestMatchers("/", "/index.html").permitAll()
+                        .requestMatchers("/", "/index.html","/api/ping").permitAll()
                         .requestMatchers("/secure.html").authenticated()
                         // 위에서 따로 지정하지 않은 나머지 요청은 일단 모두 허용
                         .anyRequest().permitAll()
