@@ -15,18 +15,11 @@ public class JwtTokenProvider {
             Keys.hmacShaKeyFor("my-super-secret-key-change-me-please-32bytes".getBytes());
     private final long validityMs = 1000L * 60 * 60; // 1시간
 
-    public Long getUserId(String token) {        // ★ userId 꺼내는 메서드
-        Claims claims = Jwts.parser().verifyWith(key).build()
-                .parseSignedClaims(token).getPayload();
-        return claims.get("userId", Long.class);
-    }
-
-    public String createToken(Long userId,String username) {
+    public String createToken(String username) {
         Date now = new Date();
         return Jwts.builder()
                 .subject(username)
                 .issuedAt(now)
-                .claim("userId",userId)
                 .expiration(new Date(now.getTime() + validityMs))
                 .signWith(key)
                 .compact();
