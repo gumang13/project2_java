@@ -4,6 +4,7 @@ import com.setting.dto.SettingCalibrationResponse;
 import com.setting.service.SettingCalibrationService;
 import com.security.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -16,9 +17,9 @@ public class SettingCalibrationController {
     private final SettingCalibrationService settingCalibrationService;
 
     // 캘리브레이션 기준값 조회
-    @GetMapping("/{memberId}")
+    @GetMapping("/")
     public ApiResponse<SettingCalibrationResponse> getCalibration(
-            @PathVariable Long memberId
+            @AuthenticationPrincipal Long memberId
     ) {
         try {
             SettingCalibrationResponse response =
@@ -32,9 +33,9 @@ public class SettingCalibrationController {
 
 
     // 캘리브레이션 재설정
-    @DeleteMapping("/{memberId}")
+    @DeleteMapping("/")
     public ApiResponse<String> resetCalibration(
-            @PathVariable Long memberId
+            @AuthenticationPrincipal Long memberId
     ) {
         try {
             settingCalibrationService.resetCalibration(memberId);

@@ -8,6 +8,7 @@ import com.setting.dto.SettingSubscriptionResponse;
 import com.setting.service.SettingSubscriptionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,9 +21,9 @@ public class SettingSubscriptionController {
     private final SettingSubscriptionService settingSubscriptionService;
 
     // 회원의 현재 구독 정보를 조회합니다.
-    @GetMapping("/subscription/{memberId}")
+    @GetMapping("/subscription")
     public ApiResponse<SettingSubscriptionResponse> getSubscription(
-            @PathVariable Long memberId
+            @AuthenticationPrincipal Long memberId
     ) {
         try {
             SettingSubscriptionResponse response =
@@ -34,9 +35,9 @@ public class SettingSubscriptionController {
     }
 
     // 회원의 구독 요금제를 변경합니다.
-    @PutMapping("/subscription/{memberId}")
+    @PutMapping("/subscription")
     public ApiResponse<SettingSubscriptionResponse> updateSubscription(
-            @PathVariable Long memberId,
+            @AuthenticationPrincipal Long memberId,
             @Valid @RequestBody SettingSubscriptionRequest request
     ) {
         try {
@@ -49,9 +50,9 @@ public class SettingSubscriptionController {
     }
 
     // 회원의 기본 결제 수단을 조회합니다.
-    @GetMapping("/payment-method/{memberId}")
+    @GetMapping("/payment-method")
     public ApiResponse<SettingPaymentMethodResponse> getDefaultPaymentMethod(
-            @PathVariable Long memberId
+            @AuthenticationPrincipal Long memberId
     ) {
         try {
             SettingPaymentMethodResponse response =
@@ -63,9 +64,9 @@ public class SettingSubscriptionController {
     }
 
     // 회원의 결제 내역을 조회합니다.
-    @GetMapping("/payments/{memberId}")
+    @GetMapping("/payments")
     public ApiResponse<List<SettingPaymentResponse>> getPayments(
-            @PathVariable Long memberId
+            @AuthenticationPrincipal Long memberId
     ) {
         try {
             List<SettingPaymentResponse> response =
@@ -77,9 +78,9 @@ public class SettingSubscriptionController {
     }
 
     // 회원의 구독 설정을 초기화합니다.
-    @DeleteMapping("/subscription/{memberId}")
+    @DeleteMapping("/subscription")
     public ApiResponse<Boolean> resetSubscription(
-            @PathVariable Long memberId
+            @AuthenticationPrincipal Long memberId
     ) {
         try {
             settingSubscriptionService.resetSubscription(memberId);
