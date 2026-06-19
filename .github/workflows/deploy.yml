@@ -1,39 +1,46 @@
-name: Deploy Docker Compose
+name: Deploy Java
 
 on:
   push:
     branches:
       - Developer
-      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy to primary server
-        id: deploy_primary
+      - name: Deploy java to server host 1
+        id: deploy_host1
         continue-on-error: true
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
+          port: ${{ secrets.SERVER_PORT }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_KEY }}
           script: |
-            cd "${{ secrets.SERVER_PATH }}"
-            git pull
-            ./gradlew.bat clean bootJar
-            docker compose up -d --build
+            set -e
 
-      - name: Deploy to backup server
-        if: steps.deploy_primary.outcome == 'failure'
+            cd /home/dw203/server/project2_java
+            git pull origin Developer
+
+            cd /home/dw203/server
+            docker compose up -d --build springboot-server nginx-server
+
+      - name: Deploy java to server host 2
+        if: steps.deploy_host1.outcome == 'failure'
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST_TWO }}
+          port: ${{ secrets.SERVER_PORT }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_KEY }}
           script: |
-            cd "${{ secrets.SERVER_PATH }}"
-            git pull
-            ./gradlew.bat clean bootJar
-            docker compose up -d --build
+            set -e
+
+            cd /home/dw203/server/project2_java
+            git pull origin Developer
+
+            cd /home/dw203/server
+            docker compose up -d --build springboot-server nginx-server
