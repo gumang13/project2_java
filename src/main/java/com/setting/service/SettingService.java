@@ -16,8 +16,10 @@ public class SettingService {
 
     @Transactional
     public void updateSetting(Long userId,String key,Object value) {
+        System.out.println(key);
+        System.out.println(value);
 
-        Setting setting= settingRepository.findByUserId(userId).orElseThrow(() ->new IllegalAccessError("회원 정보가 없습니다"));
+        Setting setting= settingRepository.findByUserId(userId).orElseThrow(() ->new IllegalArgumentException("회원 정보가 없습니다"));
         switch (key){
         case "alertSound" -> setting.setAlertSound((Boolean) value);
         case "tts" -> setting.setTts((Boolean) value);
@@ -27,7 +29,7 @@ public class SettingService {
         case "osDesktop" -> setting.setOsDesktop((Boolean) value);
             default -> {
                 System.out.println(key);
-                throw new IllegalAccessError("키값이 일치하지 않습니다");
+                throw new IllegalArgumentException("키값이 일치하지 않습니다");
 
             }
         }
