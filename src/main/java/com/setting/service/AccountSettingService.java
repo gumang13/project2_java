@@ -26,6 +26,15 @@ public class AccountSettingService {
     }
 
     @Transactional
+    public AccountInfoResponse updateName(Long memberId, AccountUpdateRequest request) {
+        Member member = findMember(memberId);
+        String name = normalizeName(request.name());
+
+        member.setName(name);
+        return AccountInfoResponse.from(member);
+    }
+
+    @Transactional
     public AccountInfoResponse updateEmail(Long memberId, AccountUpdateRequest request) {
         Member member = findMember(memberId);
         String email = normalizeEmail(request.email());
@@ -35,7 +44,7 @@ public class AccountSettingService {
         memberRepository.findByEmail(email)
                 .filter(existingMember -> !existingMember.getId().equals(memberId))
                 .ifPresent(existingMember -> {
-                    throw new IllegalArgumentException("Email is already in use.");
+                    throw new IllegalArgumentException();
                 });
 
         // JPA 영속성 컨텍스트 안에서 값만 바꿔도 트랜잭션 종료 시 DB에 반영됩니다.
@@ -44,41 +53,50 @@ public class AccountSettingService {
     }
 
     @Transactional
-    public String updatePassword(Long memberId, AccountUpdateRequest request) {
+    public Boolean updatePassword(Long memberId, AccountUpdateRequest request) {
         Member member = findMember(memberId);
 
         if (isBlank(request.password()) || isBlank(request.newPassword())) {
-            throw new IllegalArgumentException("Current password and new password are required.");
+            throw new IllegalArgumentException();
         }
 
         // DB에는 비밀번호 원문이 아니라 암호화된 해시가 저장되어 있으므로
         // PasswordEncoder.matches()로 현재 비밀번호가 맞는지 확인합니다.
         if (!passwordEncoder.matches(request.password(), member.getPassword())) {
-            throw new IllegalArgumentException("Current password does not match.");
+            throw new IllegalArgumentException();
         }
 
         // 새 비밀번호도 반드시 암호화해서 저장합니다.
         member.setPassword(passwordEncoder.encode(request.newPassword()));
-        return "Password has been changed.";
+        return true;
     }
 
     // 계정관리 API들은 모두 memberId 기준으로 회원을 먼저 찾아야 합니다.
-    // 존재하지 않는 memberId면 공통 에러 메시지를 던집니다.
+    // 존재하지 않는 memberId면 예외를 발생시킵니다.
     private Member findMember(Long memberId) {
         return memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("Account information was not found."));
+                .orElseThrow(() -> new IllegalArgumentException());
+    }
+
+    // 이름 수정 전에 빈 값을 검사하고 앞뒤 공백을 제거합니다.
+    private String normalizeName(String name) {
+        if (isBlank(name)) {
+            throw new IllegalArgumentException();
+        }
+
+        return name.trim();
     }
 
     // 이메일 수정 전에 빈 값과 기본 형식을 검사합니다.
     // 복잡한 이메일 정규식 대신, 화면 설계서 수준에 맞춰 @ 포함 여부만 확인합니다.
     private String normalizeEmail(String email) {
         if (isBlank(email)) {
-            throw new IllegalArgumentException("Email is required.");
+            throw new IllegalArgumentException();
         }
 
         String normalizedEmail = email.trim();
         if (!normalizedEmail.contains("@")) {
-            throw new IllegalArgumentException("Email format is invalid.");
+            throw new IllegalArgumentException();
         }
 
         return normalizedEmail;

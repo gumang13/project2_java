@@ -30,6 +30,20 @@ public class AccountSettingController {
         }
     }
 
+    // 계정관리 화면에서 이름을 수정할 때 호출하는 API입니다.
+    // 요청 body 예시: { "name": "홍길동" }
+    @PostMapping("/{memberId}/name")
+    public ApiResponse<AccountInfoResponse> updateName(
+            @PathVariable Long memberId,
+            @RequestBody AccountUpdateRequest request
+    ) {
+        try {
+            return ApiResponse.success(accountSettingService.updateName(memberId, request));
+        } catch (IllegalArgumentException e) {
+            return ApiResponse.error(e.getMessage());
+        }
+    }
+
     // 계정관리 화면에서 이메일을 수정할 때 호출하는 API입니다.
     // 요청 body 예시: { "email": "new@example.com" }
     @PostMapping("/{memberId}/email")
@@ -48,7 +62,7 @@ public class AccountSettingController {
     // password는 현재 비밀번호, newPassword는 새로 저장할 비밀번호입니다.
     // 요청 body 예시: { "password": "oldPw", "newPassword": "newPw" }
     @PostMapping("/{memberId}/password")
-    public ApiResponse<String> updatePassword(
+    public ApiResponse<Boolean> updatePassword(
             @PathVariable Long memberId,
             @RequestBody AccountUpdateRequest request
     ) {
