@@ -5,7 +5,7 @@ import com.setting.dto.SettingPaymentResponse;
 import com.setting.dto.SettingSubscriptionRequest;
 import com.setting.dto.SettingSubscriptionResponse;
 import com.setting.entity.SettingSubscription;
-import com.setting.enums.PlanType;
+import com.member.constant.Plan;
 import com.setting.repository.SettingPaymentMethodRepository;
 import com.setting.repository.SettingPaymentRepository;
 import com.setting.repository.SettingSubscriptionRepository;
@@ -83,8 +83,8 @@ public class SettingSubscriptionService {
     }
 
     // 무료 플랜은 만료일을 두지 않고, 유료 플랜은 한 달 뒤로 표시합니다.
-    private LocalDateTime calculateExpiresAt(PlanType plan, LocalDateTime now) {
-        if (plan == PlanType.FREE) {
+    private LocalDateTime calculateExpiresAt(Plan plan, LocalDateTime now) {
+        if (plan == Plan.FREE) {
             return null;
         }
 

@@ -1,7 +1,7 @@
 package com.setting.dto;
 
 import com.setting.entity.SettingSubscription;
-import com.setting.enums.PlanType;
+import com.member.constant.Plan;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -18,7 +18,7 @@ public class SettingSubscriptionResponse {
     private Long subscriptionId;
 
     // 현재 구독 요금제입니다.
-    private PlanType plan;
+    private Plan plan;
 
     // 구독 시작 시간입니다.
     private LocalDateTime startedAt;
@@ -52,7 +52,7 @@ public class SettingSubscriptionResponse {
         return SettingSubscriptionResponse.builder()
                 .memberId(memberId)
                 .subscriptionId(null)
-                .plan(PlanType.FREE)
+                .plan(Plan.FREE)
                 .startedAt(null)
                 .expiresAt(null)
                 .paymentMethodId(null)

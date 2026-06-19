@@ -1,6 +1,6 @@
 package com.setting.entity;
 
-import com.setting.enums.PlanType;
+import com.member.constant.Plan;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -26,7 +26,7 @@ public class SettingSubscription {
     // 회원이 사용 중인 구독 요금제입니다.
     @Enumerated(EnumType.STRING)
     @Column(name = "plan", nullable = false)
-    private PlanType plan;
+    private Plan plan;
 
     // 구독이 시작된 시간입니다.
     @Column(name = "started_at", nullable = false)
@@ -53,7 +53,7 @@ public class SettingSubscription {
             startedAt = LocalDateTime.now();
         }
         if (plan == null) {
-            plan = PlanType.FREE;
+            plan = Plan.FREE;
         }
     }
 }
