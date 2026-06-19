@@ -1,4 +1,4 @@
-package com.setting.controller;
+package com.setting.control;
 
 import com.setting.dto.SettingPaymentMethodResponse;
 import com.setting.dto.SettingPaymentResponse;
