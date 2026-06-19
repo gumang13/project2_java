@@ -1,4 +1,4 @@
-package com.setting.controller;
+package com.setting.control;
 
 import com.setting.dto.SettingCalibrationResponse;
 import com.setting.service.SettingCalibrationService;
