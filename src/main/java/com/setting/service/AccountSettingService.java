@@ -83,7 +83,7 @@ public class AccountSettingService {
         Double weeklyAverageScore = 0.0;
 
         // TODO: DailyStatsRepository가 연결되면 이번 주 알림 횟수 합계로 교체합니다.
-        Integer weeklyAlertCount = 0;
+        Integer weeklyAlertCount =500;
 
         // 가입일 기준으로 사용 기간을 계산합니다.
         Integer usageDays = calculateUsageDays(member.getCreatedDate());

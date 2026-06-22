@@ -11,7 +11,7 @@ public record AccountInfoResponse(
         String plan,
         LocalDateTime createdDate,
         LocalDateTime lastModifiedDate,
-        Double weeklyAverageScore,
+        Double goodPostureRatio,
         Integer weeklyAlertCount,
         Integer usageDays,
         Boolean calibrationCompleted
