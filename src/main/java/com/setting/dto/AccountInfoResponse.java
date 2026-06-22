@@ -11,7 +11,7 @@ public record AccountInfoResponse(
         String plan,
         LocalDateTime createdDate,
         LocalDateTime lastModifiedDate,
-        Integer weeklyAverageScore,
+        Double weeklyAverageScore,
         Integer weeklyAlertCount,
         Integer usageDays,
         Boolean calibrationCompleted
@@ -20,7 +20,7 @@ public record AccountInfoResponse(
     // 비밀번호는 보안상 절대 응답에 포함하지 않습니다.
     public static AccountInfoResponse from(
             Member member,
-            Integer weeklyAverageScore,
+            Double weeklyAverageScore,
             Integer weeklyAlertCount,
             Integer usageDays,
             Boolean calibrationCompleted

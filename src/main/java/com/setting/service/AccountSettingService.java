@@ -80,7 +80,7 @@ public class AccountSettingService {
     // 계정관리 화면에 필요한 추가값을 모아서 응답 DTO를 만듭니다.
     private AccountInfoResponse createAccountInfoResponse(Member member) {
         // TODO: 통계 저장 로직이 연결되면 실제 이번 주 평균 점수로 교체합니다.
-        Integer weeklyAverageScore = 0;
+        Double weeklyAverageScore = 0.0;
 
         // TODO: DailyStatsRepository가 연결되면 이번 주 알림 횟수 합계로 교체합니다.
         Integer weeklyAlertCount = 0;
