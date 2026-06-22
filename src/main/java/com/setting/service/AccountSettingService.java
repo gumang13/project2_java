@@ -4,10 +4,15 @@ import com.member.entity.Member;
 import com.member.repository.MemberRepository;
 import com.setting.dto.AccountInfoResponse;
 import com.setting.dto.AccountUpdateRequest;
+import com.setting.repository.SettingCalibrationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -18,11 +23,12 @@ public class AccountSettingService {
     // 이미 만들어진 MemberRepository를 가져와서 조회/수정만 담당합니다.
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SettingCalibrationRepository settingCalibrationRepository;
 
     // memberId로 회원을 찾아 계정관리 화면에 보여줄 정보를 만듭니다.
     public AccountInfoResponse getAccountInfo(Long memberId) {
         Member member = findMember(memberId);
-        return AccountInfoResponse.from(member);
+        return createAccountInfoResponse(member);
     }
 
     @Transactional
@@ -31,7 +37,7 @@ public class AccountSettingService {
         String name = normalizeName(request.name());
 
         member.setName(name);
-        return AccountInfoResponse.from(member);
+        return createAccountInfoResponse(member);
     }
 
     @Transactional
@@ -49,7 +55,7 @@ public class AccountSettingService {
 
         // JPA 영속성 컨텍스트 안에서 값만 바꿔도 트랜잭션 종료 시 DB에 반영됩니다.
         member.setEmail(email);
-        return AccountInfoResponse.from(member);
+        return createAccountInfoResponse(member);
     }
 
     @Transactional
@@ -69,6 +75,42 @@ public class AccountSettingService {
         // 새 비밀번호도 반드시 암호화해서 저장합니다.
         member.setPassword(passwordEncoder.encode(request.newPassword()));
         return true;
+    }
+
+    // 계정관리 화면에 필요한 추가값을 모아서 응답 DTO를 만듭니다.
+    private AccountInfoResponse createAccountInfoResponse(Member member) {
+        // TODO: 통계 저장 로직이 연결되면 실제 이번 주 평균 점수로 교체합니다.
+        Double weeklyAverageScore = 0.0;
+
+        // TODO: DailyStatsRepository가 연결되면 이번 주 알림 횟수 합계로 교체합니다.
+        Integer weeklyAlertCount = 0;
+
+        // 가입일 기준으로 사용 기간을 계산합니다.
+        Integer usageDays = calculateUsageDays(member.getCreatedDate());
+
+        // 캘리브레이션 데이터가 있으면 완료 상태로 표시합니다.
+        Boolean calibrationCompleted =
+                settingCalibrationRepository.existsByMemberId(member.getId());
+
+        return AccountInfoResponse.from(
+                member,
+                weeklyAverageScore,
+                weeklyAlertCount,
+                usageDays,
+                calibrationCompleted
+        );
+    }
+
+    // createdDate부터 오늘까지의 사용 일수를 계산합니다.
+    private Integer calculateUsageDays(LocalDateTime createdDate) {
+        if (createdDate == null) {
+            return 0;
+        }
+
+        return (int) ChronoUnit.DAYS.between(
+                createdDate.toLocalDate(),
+                LocalDate.now()
+        ) + 1;
     }
 
     // 계정관리 API들은 모두 memberId 기준으로 회원을 먼저 찾아야 합니다.
