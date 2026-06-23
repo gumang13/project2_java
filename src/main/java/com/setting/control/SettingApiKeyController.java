@@ -25,6 +25,7 @@ public class SettingApiKeyController {
     // 프론트가 /api/keys/로 (슬래시 없이) 호출하므로 매핑값을 비워둠.
     @PostMapping
     public ApiResponse<SettingApiKeyCreateResponse> issue(@AuthenticationPrincipal Long memberId) {
+        System.out.println("나는 컨트롤");
         try {
             return ApiResponse.success(apiKeyService.issue(memberId));
         } catch (IllegalArgumentException e) {
