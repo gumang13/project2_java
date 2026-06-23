@@ -31,7 +31,7 @@ public class SettingApiKeyService {
     // 키 발급 : 원본 키는 반환값으로만 1회 전달, DB엔 해시만 저장
     @Transactional
     public SettingApiKeyCreateResponse issue(Long memberId) {
-
+        System.out.println("여기까진 도달 완료 나는 서비스");
         long activeCount = apiKeyRepository.countByMemberIdAndStatus(memberId, ApiKeyStatus.ACTIVE);
         if (activeCount >= MAX_ACTIVE_KEYS) {
             throw new IllegalArgumentException("최대 " + MAX_ACTIVE_KEYS + "개까지만 발급할 수 있습니다.");
@@ -39,12 +39,14 @@ public class SettingApiKeyService {
 
         String rawKey = generateRawKey(); // 사용자에게 1회 노출할 원본 키
         String keyHash = sha256(rawKey); // DB엔 이 해시만 저장
+        String prefix = rawKey.substring(0, 12);
 
         SettingApiKey saved = apiKeyRepository.save(
                 SettingApiKey.builder()
                         .memberId(memberId)
                         .keyHash(keyHash)
                         .status(ApiKeyStatus.ACTIVE)
+                        .keyPrefix(prefix)
                         .build()
         );
 
@@ -53,7 +55,7 @@ public class SettingApiKeyService {
 
     // 내 키 목록 조회(원본 키 미포함)
     public List<SettingApiKeyResponse> list(Long memberId) {
-        return apiKeyRepository.findByMemberIdOrderByCreatedAtDesc(memberId).stream()
+        return apiKeyRepository.findByMemberIdAndStatusOrderByCreatedAtDesc(memberId,ApiKeyStatus.ACTIVE).stream()
                 .map(SettingApiKeyResponse::from)
                 .toList();
     }

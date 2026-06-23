@@ -35,6 +35,9 @@ public class SettingApiKey {
     @Column(name = "last_used_at")
     private LocalDateTime lastUsedAt; // 마지막 사용 시각(키 검증 단계에서 갱신 예정)
 
+    @Column(name = "key_prefix")
+    private String keyPrefix;
+
     @PrePersist // DB에 처음 저장되기 전 자동 실행
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
