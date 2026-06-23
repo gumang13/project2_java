@@ -12,4 +12,6 @@ public interface SettingPaymentMethodRepository extends JpaRepository<SettingPay
 
     // 회원 ID에 등록된 결제 수단이 있는지 확인합니다.
     boolean existsByMemberId(Long memberId);
+
+    void deleteByMemberId(Long memberId);
 }
