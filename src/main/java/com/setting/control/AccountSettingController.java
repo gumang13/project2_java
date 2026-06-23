@@ -6,8 +6,8 @@ import com.setting.dto.AccountUpdateRequest;
 import com.setting.service.AccountSettingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -69,6 +69,27 @@ public class AccountSettingController {
     ) {
         try {
             return ApiResponse.success(accountSettingService.updatePassword(memberId, request));
+        } catch (IllegalArgumentException e) {
+            return ApiResponse.error(e.getMessage());
+        }
+    }
+    //통계 데이터 초기화
+    //api/members/reset 요청보내면 service 에서 로그인한 아이디 정보 가져오고 resetStats 실행
+    @DeleteMapping("/reset")
+    public ApiResponse<Boolean> resetStats(@AuthenticationPrincipal Long memberId) {
+        try {
+            accountSettingService.resetStats(memberId);
+            return ApiResponse.success(true);
+        } catch (IllegalArgumentException e) {
+            return ApiResponse.error(e.getMessage());
+        }
+    }
+    //회원 탈퇴 -로그인한 아이디 가져오고  서비스에서 탈퇴 로직 실행
+    @DeleteMapping("/withdraw")
+    public ApiResponse<Boolean> withdraw(@AuthenticationPrincipal Long memberId) {
+        try {
+            accountSettingService.withdraw(memberId);
+            return ApiResponse.success(true);
         } catch (IllegalArgumentException e) {
             return ApiResponse.error(e.getMessage());
         }

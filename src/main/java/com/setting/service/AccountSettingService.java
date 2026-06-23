@@ -1,10 +1,17 @@
 package com.setting.service;
 
+import com.analysis.repository.AnalysisEventRepository;
+import com.analysis.repository.AnalysisRepository;
 import com.member.entity.Member;
 import com.member.repository.MemberRepository;
 import com.setting.dto.AccountInfoResponse;
 import com.setting.dto.AccountUpdateRequest;
 import com.setting.repository.SettingCalibrationRepository;
+import com.setting.repository.SettingPaymentMethodRepository;
+import com.setting.repository.SettingPaymentRepository;
+import com.setting.repository.SettingRepository;
+import com.setting.repository.SettingSubscriptionRepository;
+import com.stats.repository.DailyStatsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -13,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +32,13 @@ public class AccountSettingService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final SettingCalibrationRepository settingCalibrationRepository;
+    private final AnalysisRepository analysisRepository;
+    private final AnalysisEventRepository analysisEventRepository;
+    private final DailyStatsRepository dailyStatsRepository;
+    private final SettingRepository settingRepository;
+    private final SettingSubscriptionRepository settingSubscriptionRepository;
+    private final SettingPaymentRepository settingPaymentRepository;
+    private final SettingPaymentMethodRepository settingPaymentMethodRepository;
 
     // memberId로 회원을 찾아 계정관리 화면에 보여줄 정보를 만듭니다.
     public AccountInfoResponse getAccountInfo(Long memberId) {
@@ -148,4 +163,35 @@ public class AccountSettingService {
     private boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
     }
+
+    //DB 작업을 하나로 묶음처리 멤버 id 조회해서 삭제
+    @Transactional
+    public void resetStats(Long memberId) {
+        findMember(memberId);
+        deleteStats(memberId);
+    }
+    //위에 deletStats 연결 - 이 회원이 가진 분석기록 조회 후 비어있지 않으면 삭제
+    private void deleteStats(Long memberId) {
+        List<Long> analysisIds = analysisRepository.findIdsByMemberId(memberId);
+
+        if (!analysisIds.isEmpty()) {
+            analysisEventRepository.deleteByAnalysisIdIn(analysisIds);
+        }
+        analysisRepository.deleteByMemberId(memberId);
+        dailyStatsRepository.deleteByMemberId(memberId);
+    }
+    //계정 탈퇴(삭제) 진행 memberId랑 이어진 데이터들 삭제(통계데이터초기화(삭제) 메서드도 위에서 가져와서넣음)
+    @Transactional
+    public void withdraw(Long memberId) {
+        Member member = findMember(memberId);
+
+        deleteStats(memberId);
+        settingPaymentRepository.deleteByMemberId(memberId);
+        settingPaymentMethodRepository.deleteByMemberId(memberId);
+        settingSubscriptionRepository.deleteByMemberId(memberId);
+        settingCalibrationRepository.deleteByMemberId(memberId);
+        settingRepository.deleteByUserId(memberId);
+        memberRepository.delete(member);
+    }
+
 }

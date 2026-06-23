@@ -9,4 +9,6 @@ public interface SettingPaymentRepository extends JpaRepository<SettingPayment, 
 
     // 회원 ID로 결제 내역을 최신순으로 조회합니다.
     List<SettingPayment> findByMemberIdOrderByCreatedAtDesc(Long memberId);
+
+    void deleteByMemberId(Long memberId);
 }
