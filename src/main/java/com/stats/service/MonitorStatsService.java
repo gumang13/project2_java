@@ -63,8 +63,8 @@ public class MonitorStatsService {
         List<DailyStats> dailyStats =
                 dailyStatsRepository.findByMemberIdAndStatDateBetween(
                         id,
-                        fromDate.atStartOfDay(),
-                        toDate.plusDays(1).atStartOfDay()
+                        fromDate,
+                        toDate
                 );
 
         if (dailyStats.isEmpty()) {
@@ -233,7 +233,7 @@ public class MonitorStatsService {
                 continue;
             }
 
-            int index = getRangeBucketIndex(period, fromDate, dailyStat.getStatDate().toLocalDate(), bucketCount);
+            int index = getRangeBucketIndex(period, fromDate, dailyStat.getStatDate(), bucketCount);
             if (index < 0) {
                 continue;
             }

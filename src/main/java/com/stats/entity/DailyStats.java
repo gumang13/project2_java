@@ -3,7 +3,7 @@ package com.stats.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Entity
 @Getter
@@ -17,7 +17,7 @@ public class DailyStats {
     private Long memberId;
 
     @Column
-    private LocalDateTime statDate;
+    private LocalDate statDate;
 
     @Column
     private int notiCount;
