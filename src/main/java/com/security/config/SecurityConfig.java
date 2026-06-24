@@ -25,7 +25,7 @@ public class SecurityConfig {
                 .formLogin(f -> f.disable())
                 .httpBasic(b -> b.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/ping","/api/members/signup").permitAll()
+                        .requestMatchers("/api/auth/**", "/api/ping","/api/members/signup","/api/calibration/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter,
