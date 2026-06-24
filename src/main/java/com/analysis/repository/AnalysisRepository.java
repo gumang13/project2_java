@@ -27,4 +27,6 @@ public interface AnalysisRepository extends JpaRepository<Analysis, Long> {
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to
     );
+    //전달 받은 memberId 에 해당되는 데이터 삭제 후 반환없음
+    void deleteByMemberId(Long memberId);
 }
