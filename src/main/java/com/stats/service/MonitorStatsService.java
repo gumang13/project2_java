@@ -63,8 +63,8 @@ public class MonitorStatsService {
         List<DailyStats> dailyStats =
                 dailyStatsRepository.findByMemberIdAndStatDateBetween(
                         id,
-                        fromDate.atStartOfDay(),
-                        toDate.plusDays(1).atStartOfDay()
+                        fromDate,
+                        toDate
                 );
 
         if (dailyStats.isEmpty()) {
