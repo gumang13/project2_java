@@ -1,10 +1,12 @@
 package com.stats.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Getter
 public class DailyStats {
 
     @Id
@@ -22,4 +24,16 @@ public class DailyStats {
 
     @Column
     private int goodPostureSec;
+
+    // 거북목 자세 누적 시간(초) 컬럼 추가
+    @Column
+    private int badPostureSec;
+
+    // 전체 측정 시간(초)  컬럼 추가
+    @Column
+    private int totalMeasureSec;
+
+
+
+
 }
