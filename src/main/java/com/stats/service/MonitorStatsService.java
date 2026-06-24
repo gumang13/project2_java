@@ -71,7 +71,17 @@ public class MonitorStatsService {
             return createEmptyStats(period);
         }
 
-        return buildRangeStats(period, dailyStats, fromDate);
+        LocalDateTime from = fromDate.atStartOfDay();
+        LocalDateTime to = getPeriodEnd(period);
+        List<Analysis> analyses = analysisRepository.findByMemberIdAndPeriodOverlap(id, from, to);
+        List<Long> analysisIds = analyses.stream()
+                .map(Analysis::getId)
+                .toList();
+        List<AnalysisEvent> events = analysisIds.isEmpty()
+                ? List.of()
+                : analysisEventRepository.findByAnalysisIdIn(analysisIds);
+
+        return buildRangeStats(period, dailyStats, events, fromDate, from, to);
     }
 
     // 추가: 측정 데이터가 없을 때도 프론트 차트가 null 때문에 깨지지 않도록 빈 응답을 만듭니다.
@@ -189,13 +199,21 @@ public class MonitorStatsService {
         dto.setLabels(createLabels(buckets));
         dto.setTotalHours(toHours(totalSecondsByBucket));
         dto.setGoodHours(calculateGoodHours(totalSecondsByBucket, badSecondsByBucket));
-        dto.setHourly(calculateHourly(events, buckets));
+        // 프론트가 hourly를 9시~18시 10칸으로 해석하므로 같은 형식으로 내려줍니다.
+        dto.setHourly(calculateHourlyPattern(events, from, to));
         dto.setLogs(createLogs(events, from, to));
 
         return dto;
     }
     // week/month는 daily_stats에 저장된 일별 집계값으로 계산합니다.
-    private MonitorStatsDto buildRangeStats(String period, List<DailyStats> dailyStats, LocalDate fromDate) {
+    private MonitorStatsDto buildRangeStats(
+            String period,
+            List<DailyStats> dailyStats,
+            List<AnalysisEvent> events,
+            LocalDate fromDate,
+            LocalDateTime from,
+            LocalDateTime to
+    ) {
         MonitorStatsDto dto = new MonitorStatsDto();
         int bucketCount = period.equals("week") ? 7 : 5;
 
@@ -242,8 +260,9 @@ public class MonitorStatsService {
         dto.setLabels(labels);
         dto.setGoodHours(toHours(goodSecondsByBucket));
         dto.setTotalHours(toHours(totalSecondsByBucket));
-        dto.setHourly(alertsByBucket);
-        dto.setLogs(List.of());
+        // 프론트가 hourly를 9시~18시 10칸으로 해석하므로 같은 형식으로 내려줍니다.
+        dto.setHourly(calculateHourlyPattern(events, from, to));
+        dto.setLogs(createLogs(events, from, to));
 
         return dto;
     }
@@ -462,27 +481,24 @@ public class MonitorStatsService {
         return labels;
     }
 
-    // 추가: BAD_POSTURE 발생 횟수를 차트 구간별로 계산합니다.
-    private List<Integer> calculateHourly(List<AnalysisEvent> events, List<TimeBucket> buckets) {
-        List<Integer> hourly = new ArrayList<>(Collections.nCopies(buckets.size(), 0));
+    // 추가: 프론트 시간대 차트가 9시~18시 10칸으로 고정되어 있어, 모든 period에서 같은 형식으로 내려줍니다.
+    private List<Integer> calculateHourlyPattern(List<AnalysisEvent> events, LocalDateTime from, LocalDateTime to) {
+        List<Integer> hourly = new ArrayList<>(Collections.nCopies(10, 0));
 
         for (AnalysisEvent event : events) {
-            if (event.getEventType() != EventType.BAD_POSTURE) {
+            if (event.getEventType() != EventType.BAD_POSTURE || !isInPeriod(event.getEventAt(), from, to)) {
                 continue;
             }
 
-            for (int i = 0; i < buckets.size(); i++) {
-                TimeBucket bucket = buckets.get(i);
-                if (!event.getEventAt().isBefore(bucket.from()) && event.getEventAt().isBefore(bucket.to())) {
-                    hourly.set(i, hourly.get(i) + 1);
-                    break;
-                }
+            int hour = event.getEventAt().getHour();
+            if (hour >= 9 && hour <= 18) {
+                int index = hour - 9;
+                hourly.set(index, hourly.get(index) + 1);
             }
         }
 
         return hourly;
     }
-
 
     // 추가: 초 단위 값을 프론트 차트에서 쓰는 시간 단위로 변환합니다.
     private List<Double> toHours(List<Long> secondsByHour) {
