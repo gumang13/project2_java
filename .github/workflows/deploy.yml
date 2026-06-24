@@ -29,3 +29,7 @@ jobs:
             cd /home/dw203/server
             docker compose up -d --build springboot-server
             docker compose up -d --force-recreate nginx-server
+
+            docker builder prune -af || true
+            docker image prune -af || true
+            df -h
