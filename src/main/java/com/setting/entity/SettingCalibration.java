@@ -17,8 +17,11 @@ public class SettingCalibration {
     @GeneratedValue(strategy = GenerationType.IDENTITY) // auto_increment
     private Long id;
 
-    @Column(name = "member_id", nullable = false, unique = true)
+    @Column(name = "member_id", nullable = false)
     private Long memberId; // 회원 ID
+
+    @Column(name = "camera_position", nullable = false)
+    private String cameraPosition; // 카메라 방향
 
     @Column(name = "good_angle")
     private Float goodAngle; // 정자세 기준 각도
@@ -34,5 +37,12 @@ public class SettingCalibration {
         this.createdAt = LocalDateTime.now();
     }
 
+    public void updateCalibration(Float goodAngle, Float turtleThreshold) {
+        this.goodAngle = goodAngle;
+        this.turtleThreshold = turtleThreshold;
+    }
+
 
 }
+
+

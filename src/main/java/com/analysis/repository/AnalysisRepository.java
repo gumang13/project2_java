@@ -13,8 +13,10 @@ public interface AnalysisRepository extends JpaRepository<Analysis, Long> {
     @Query("SELECT a.id FROM Analysis a WHERE a.memberId = :memberId")
     List<Long> findIdsByMemberId(@Param("memberId") Long memberId);
 
+    // FastAPI 재시작 시 Spring Boot의 미종료 세션 정리
+    List<Analysis> findByEndedAtIsNull();
 
-    //통계 계산 시 기간 경계에 걸친 분석 세션과 진행 중인 분석 세션을 누락하지 않기 위해, memberId와 기간 겹침 조건으로 Analysis를 조회하는 쿼리를 추가
+    // 통계 계산 시 기간 경계에 걸친 분석 세션과 진행 중인 분석 세션을 함께 조회
     // startedAt~endedAt이 요청 기간과 겹치는 세션을 조회
     @Query("""
             SELECT a FROM Analysis a
@@ -27,6 +29,7 @@ public interface AnalysisRepository extends JpaRepository<Analysis, Long> {
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to
     );
-    //전달 받은 memberId 에 해당되는 데이터 삭제 후 반환없음
+
+    // 전달 받은 memberId에 해당되는 데이터 삭제 후 반환없음
     void deleteByMemberId(Long memberId);
 }

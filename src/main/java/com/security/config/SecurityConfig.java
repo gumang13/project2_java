@@ -11,11 +11,22 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+// fastapi 요청 인증
+/*
+FastAPI 요청
+→ InternalApiAuthenticationFilter에서 X-Internal-Secret 검사
+→ 맞으면 통과
+→ SecurityConfig에서 해당 경로 permitAll
+→ Controller 도달
+ */
+import com.security.filter.InternalApiAuthenticationFilter;
+
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final InternalApiAuthenticationFilter internalApiAuthenticationFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -25,9 +36,20 @@ public class SecurityConfig {
                 .formLogin(f -> f.disable())
                 .httpBasic(b -> b.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/ping","/api/members/signup").permitAll()
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/api/ping",
+                                "/api/members/signup",
+                                "/api/settings/calibration/sessions/result", // Jwt는 면제지만 x-internal-secret 검사
+                                "/api/settings/calibration/analysis/**",
+                                "/api/analysis-sessions/end",
+                                "/api/analysis-sessions/cleanup-unfinished",
+                                "/api/analysis-sessions/events"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
+                .addFilterBefore(internalApiAuthenticationFilter, // fastapi 인증
+                        UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class);
         return http.build();

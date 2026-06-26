@@ -7,6 +7,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+// 캘리브레이션
+import com.setting.dto.CalibrationSessionResultRequest;
+
+// 캘리브레이션 세션 Dto
+import com.setting.dto.CalibrationSessionStartResponse;
+
 
 
 @RestController // JSON 응답을 반환하는 컨트롤러
@@ -15,6 +21,47 @@ import org.springframework.web.bind.annotation.*;
 public class SettingCalibrationController {
 
     private final SettingCalibrationService settingCalibrationService;
+
+    // 캘리브레이션 세션 생성
+    @PostMapping("/sessions/start")
+    public ApiResponse<CalibrationSessionStartResponse> startCalibrationSession(
+            @AuthenticationPrincipal Long memberId
+    ) {
+        CalibrationSessionStartResponse response =
+                settingCalibrationService.startCalibrationSession(memberId);
+
+        return ApiResponse.success(response);
+    }
+
+    // 캘리브레션 저장
+    @PostMapping("/sessions/result")
+    public ApiResponse<String> saveCalibrationResult(
+            @RequestBody CalibrationSessionResultRequest request
+    ) {
+        settingCalibrationService.saveCalibrationResult(
+                request.calibrationSessionId(),
+                request.cameraPosition(),
+                request.goodAngle(),
+                request.turtleThreshold()
+        );
+
+        return ApiResponse.success("캘리브레이션 결과가 저장되었습니다.");
+    }
+
+    // 분석 세션 id와 카메라 위치로 캘리브레이션 조회
+    @GetMapping("/analysis/{analysisId}")
+    public ApiResponse<SettingCalibrationResponse> getCalibrationForAnalysis(
+            @PathVariable Long analysisId,
+            @RequestParam String cameraPosition
+    ) {
+        SettingCalibrationResponse response =
+                settingCalibrationService.getCalibrationForAnalysis(
+                        analysisId,
+                        cameraPosition
+                );
+
+        return ApiResponse.success(response);
+    }
 
     // 캘리브레이션 기준값 조회
     @GetMapping("/")
