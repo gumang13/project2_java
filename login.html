@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>로그인 — 목격자</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@700&display=swap');
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+    :root{--brand:#2F6B4F;--brand-dark:#1E4634;--brand-light:#A7C4B5;--bg:#F4F6F2;--ok:#639922;--ok-bg:#EAF3DE;--ok-border:#C0DD97;--alert:#E24B4A;--alert-bg:#FCEBEB;--alert-border:#F7C1C1;--text:#1B2D23;--muted:#4A6B58;--white:#fff;}
+    body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;}
+
+    /* ── TOPNAV ── */
+    .topnav{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;background:var(--white);border-bottom:1px solid rgba(47,107,79,0.12);}
+    .nav-logo{display:flex;align-items:center;gap:8px;font-family:'Noto Serif KR',serif;font-size:17px;font-weight:700;color:var(--brand-dark);text-decoration:none;}
+    .logo-box{width:30px;height:30px;background:var(--brand);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+
+    /* ── LAYOUT ── */
+    .auth-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px;}
+    .auth-card{background:var(--white);border-radius:20px;border:1px solid rgba(47,107,79,0.12);padding:40px;width:100%;max-width:420px;box-shadow:0 4px 24px rgba(47,107,79,0.08);}
+
+    /* ── HEADER ── */
+    .auth-header{text-align:center;margin-bottom:32px;}
+    .auth-header .auth-icon{width:56px;height:56px;background:var(--ok-bg);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 16px;}
+    .auth-header h1{font-family:'Noto Serif KR',serif;font-size:22px;font-weight:700;color:var(--brand-dark);margin-bottom:6px;}
+    .auth-header p{font-size:13px;color:var(--muted);}
+
+    /* ── FORM ── */
+    .form-group{margin-bottom:16px;}
+    .form-label{display:block;font-size:13px;font-weight:500;color:var(--text);margin-bottom:6px;}
+    .form-input-wrap{position:relative;}
+    .form-input-wrap i{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--muted);}
+    .form-input{width:100%;padding:11px 14px 11px 40px;border:1.5px solid rgba(47,107,79,0.2);border-radius:10px;font-size:14px;font-family:'Noto Sans KR',sans-serif;color:var(--text);background:var(--white);outline:none;transition:border-color .15s;}
+    .form-input:focus{border-color:var(--brand);}
+    .form-input.error{border-color:var(--alert);}
+    .form-input-wrap .toggle-pw{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px;}
+    .form-input-wrap .toggle-pw:hover{color:var(--brand);}
+
+    /* error msg */
+    .error-msg{font-size:11px;color:var(--alert);margin-top:5px;display:flex;align-items:center;gap:4px;}
+    .error-msg i{font-size:13px;}
+
+    /* ── FORGOT ── */
+    .forgot-wrap{text-align:right;margin-top:-8px;margin-bottom:20px;}
+    .forgot-link{font-size:12px;color:var(--muted);text-decoration:none;cursor:pointer;}
+    .forgot-link:hover{color:var(--brand);}
+
+    /* ── SUBMIT BTN ── */
+    .btn-submit{width:100%;padding:13px;border-radius:100px;font-size:15px;font-weight:700;font-family:'Noto Sans KR',sans-serif;border:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--brand);color:#fff;margin-bottom:16px;}
+    .btn-submit:hover{background:var(--brand-dark);}
+    .btn-submit:disabled{opacity:.6;cursor:default;}
+
+    /* ── DIVIDER ── */
+    .auth-divider{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+    .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:rgba(47,107,79,0.12);}
+    .auth-divider span{font-size:12px;color:var(--muted);}
+
+    /* ── SOCIAL BTN ── */
+    .btn-social{width:100%;padding:11px;border-radius:100px;font-size:14px;font-weight:500;font-family:'Noto Sans KR',sans-serif;border:1.5px solid rgba(47,107,79,0.2);cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--white);color:var(--text);margin-bottom:10px;}
+    .btn-social:hover{border-color:var(--brand);background:var(--bg);}
+    .btn-social:last-child{margin-bottom:0;}
+    .social-icon{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+    .social-icon.google{background:#EA4335;color:#fff;}
+    .social-icon.kakao{background:#FEE500;color:#3C1E1E;}
+
+    /* ── FOOTER ── */
+    .auth-footer{text-align:center;margin-top:24px;font-size:13px;color:var(--muted);}
+    .auth-footer a{color:var(--brand);font-weight:700;text-decoration:none;}
+    .auth-footer a:hover{text-decoration:underline;}
+
+    /* ── TOAST ── */
+    .toast{display:none;align-items:center;gap:8px;background:var(--alert);color:#fff;padding:10px 18px;border-radius:100px;font-size:13px;font-weight:500;position:fixed;bottom:32px;left:50%;transform:translateX(-50%);z-index:999;}
+    .toast.show{display:flex;animation:fadeup .3s ease;}
+    @keyframes fadeup{from{opacity:0;transform:translateX(-50%) translateY(8px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+  </style>
+</head>
+<body>
+
+<nav class="topnav">
+  <a href="index.html" class="nav-logo">
+    <div class="logo-box">🐢</div>
+    목격자
+  </a>
+</nav>
+
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="auth-icon">🐢</div>
+      <h1>다시 만나서 반가워요!</h1>
+      <p>이메일과 비밀번호로 로그인하세요</p>
+    </div>
+
+    <form onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label class="form-label">이메일</label>
+        <div class="form-input-wrap">
+          <i class="ti ti-mail"></i>
+          <input type="email" class="form-input" id="email-input" placeholder="email@example.com" />
+        </div>
+        <div class="error-msg" id="email-error" style="display:none;">
+          <i class="ti ti-alert-circle"></i>
+          <span>올바른 이메일 형식을 입력해주세요</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">비밀번호</label>
+        <div class="form-input-wrap">
+          <i class="ti ti-lock"></i>
+          <input type="password" class="form-input" id="pw-input" placeholder="비밀번호 입력" />
+          <button type="button" class="toggle-pw" onclick="togglePw('pw-input', this)">
+            <i class="ti ti-eye"></i>
+          </button>
+        </div>
+        <div class="error-msg" id="pw-error" style="display:none;">
+          <i class="ti ti-alert-circle"></i>
+          <span>비밀번호를 입력해주세요</span>
+        </div>
+      </div>
+
+      <div class="forgot-wrap">
+        <a class="forgot-link">비밀번호를 잊으셨나요?</a>
+      </div>
+
+      <button type="submit" class="btn-submit" id="login-btn">
+        <i class="ti ti-login"></i>
+        로그인
+      </button>
+    </form>
+
+    <div class="auth-divider"><span>또는</span></div>
+
+    <button class="btn-social">
+      <div class="social-icon google">G</div>
+      Google로 계속하기
+    </button>
+    <button class="btn-social">
+      <div class="social-icon kakao">K</div>
+      카카오로 계속하기
+    </button>
+
+    <div class="auth-footer">
+      아직 계정이 없으신가요? <a href="register.html">회원가입</a>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><i class="ti ti-alert-circle"></i><span id="toast-msg"></span></div>
+
+<script>
+  function togglePw(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.className = 'ti ti-eye-off';
+    } else {
+      input.type = 'password';
+      icon.className = 'ti ti-eye';
+    }
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  function handleLogin(e) {
+    e.preventDefault();
+    const email = document.getElementById('email-input').value.trim();
+    const pw = document.getElementById('pw-input').value;
+    let valid = true;
+
+    // 이메일 검증
+    const emailErr = document.getElementById('email-error');
+    const emailInput = document.getElementById('email-input');
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      emailErr.style.display = 'flex';
+      emailInput.classList.add('error');
+      valid = false;
+    } else {
+      emailErr.style.display = 'none';
+      emailInput.classList.remove('error');
+    }
+
+    // 비밀번호 검증
+    const pwErr = document.getElementById('pw-error');
+    const pwInput = document.getElementById('pw-input');
+    if (!pw) {
+      pwErr.style.display = 'flex';
+      pwInput.classList.add('error');
+      valid = false;
+    } else {
+      pwErr.style.display = 'none';
+      pwInput.classList.remove('error');
+    }
+
+    if (!valid) return;
+
+    // 로그인 성공 시뮬레이션
+    const btn = document.getElementById('login-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ti ti-loader" style="animation:spin .8s linear infinite;"></i> 로그인 중...';
+    setTimeout(() => {
+      window.location.href = 'analysis.html';
+    }, 1000);
+  }
+
+  // 스타일
+  const style = document.createElement('style');
+  style.textContent = '@keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}'
+  document.head.appendChild(style);
+</script>
+</body>
+</html>
