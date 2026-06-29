@@ -59,21 +59,21 @@ public class MonitorStatsService {
         };
 
         LocalDate toDate = LocalDate.now();
+        LocalDateTime fromDateTime = fromDate.atStartOfDay();
+        LocalDateTime toDateTime = toDate.plusDays(1).atStartOfDay();
 
         List<DailyStats> dailyStats =
                 dailyStatsRepository.findByMemberIdAndStatDateBetween(
                         id,
-                        fromDate,
-                        toDate
+                        fromDateTime,
+                        toDateTime
                 );
 
         if (dailyStats.isEmpty()) {
             return createEmptyStats(period);
         }
 
-        LocalDateTime from = fromDate.atStartOfDay();
-        LocalDateTime to = getPeriodEnd(period);
-        List<Analysis> analyses = analysisRepository.findByMemberIdAndPeriodOverlap(id, from, to);
+        List<Analysis> analyses = analysisRepository.findByMemberIdAndPeriodOverlap(id, fromDateTime, toDateTime);
         List<Long> analysisIds = analyses.stream()
                 .map(Analysis::getId)
                 .toList();
@@ -81,7 +81,7 @@ public class MonitorStatsService {
                 ? List.of()
                 : analysisEventRepository.findByAnalysisIdIn(analysisIds);
 
-        return buildRangeStats(period, dailyStats, events, fromDate, from, to);
+        return buildRangeStats(period, dailyStats, events, fromDate, fromDateTime, toDateTime);
     }
 
     // 추가: 측정 데이터가 없을 때도 프론트 차트가 null 때문에 깨지지 않도록 빈 응답을 만듭니다.
@@ -201,7 +201,7 @@ public class MonitorStatsService {
         dto.setGoodHours(calculateGoodHours(totalSecondsByBucket, badSecondsByBucket));
         // 프론트가 hourly를 9시~18시 10칸으로 해석하므로 같은 형식으로 내려줍니다.
         dto.setHourly(calculateHourlyPattern(events, from, to));
-        dto.setLogs(createLogs(events, from, to));
+        dto.setLogs(createLogs(events, from, to, "day"));
 
         return dto;
     }
@@ -257,12 +257,25 @@ public class MonitorStatsService {
         dto.setRatio(totalSeconds == 0 ? 0 : (int) Math.round(goodSeconds * 100.0 / totalSeconds));
         dto.setRatioTrend(0);
 
-        dto.setLabels(labels);
-        dto.setGoodHours(toHours(goodSecondsByBucket));
-        dto.setTotalHours(toHours(totalSecondsByBucket));
+        List<String> visibleLabels = new ArrayList<>();
+        List<Long> visibleGoodSeconds = new ArrayList<>();
+        List<Long> visibleTotalSeconds = new ArrayList<>();
+        for (int i = 0; i < totalSecondsByBucket.size(); i++) {
+            if (totalSecondsByBucket.get(i) <= 0) {
+                continue;
+            }
+
+            visibleLabels.add(labels.get(i));
+            visibleGoodSeconds.add(goodSecondsByBucket.get(i));
+            visibleTotalSeconds.add(totalSecondsByBucket.get(i));
+        }
+
+        dto.setLabels(visibleLabels);
+        dto.setGoodHours(toHours(visibleGoodSeconds));
+        dto.setTotalHours(toHours(visibleTotalSeconds));
         // 프론트가 hourly를 9시~18시 10칸으로 해석하므로 같은 형식으로 내려줍니다.
         dto.setHourly(calculateHourlyPattern(events, from, to));
-        dto.setLogs(createLogs(events, from, to));
+        dto.setLogs(createLogs(events, from, to, period));
 
         return dto;
     }
@@ -524,7 +537,9 @@ public class MonitorStatsService {
     }
 
     // 추가: 최근 이벤트 로그를 프론트 LogDto 형태로 변환합니다.
-    private List<LogDto> createLogs(List<AnalysisEvent> events, LocalDateTime from, LocalDateTime to) {
+    private List<LogDto> createLogs(List<AnalysisEvent> events, LocalDateTime from, LocalDateTime to, String period) {
+        events.sort(Comparator.comparing(AnalysisEvent::getEventAt));
+
         List<LogDto> logs = new ArrayList<>();
         LocalDateTime badStartedAt = null;
 
@@ -534,7 +549,7 @@ public class MonitorStatsService {
             }
 
             LogDto log = new LogDto();
-            log.setTime(event.getEventAt().toLocalTime().truncatedTo(ChronoUnit.MINUTES).toString());
+            log.setTime(formatLogTime(event.getEventAt(), period));
 
             if (event.getEventType() == EventType.BAD_POSTURE) {
                 badStartedAt = event.getEventAt();
@@ -551,10 +566,20 @@ public class MonitorStatsService {
             logs.add(log);
         }
 
-        return logs;
+        int fromIndex = Math.max(0, logs.size() - 6);
+        return logs.subList(fromIndex, logs.size());
     }
 
     // 추가: 초 단위 시간을 소수점 한 자리 시간 값으로 반올림합니다.
+    private String formatLogTime(LocalDateTime eventAt, String period) {
+        String time = eventAt.toLocalTime().truncatedTo(ChronoUnit.MINUTES).toString();
+        if (period.equals("day")) {
+            return time;
+        }
+
+        return String.format("%02d/%02d %s", eventAt.getMonthValue(), eventAt.getDayOfMonth(), time);
+    }
+
     private double roundHour(long seconds) {
         return Math.round((seconds / 3600.0) * 10) / 10.0;
     }
