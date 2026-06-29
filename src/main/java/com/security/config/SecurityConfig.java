@@ -1,6 +1,8 @@
 package com.security.config;
 
 import com.security.jwt.JwtAuthenticationFilter;
+
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -48,10 +50,16 @@ public class SecurityConfig {
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
+                .exceptionHandling(ex -> ex  // JWT 미인증 요청에 401을 반환(기존 403 반환)
+                .authenticationEntryPoint((request, response, authException) ->
+                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED)
+                )
+                )                
                 .addFilterBefore(internalApiAuthenticationFilter, // fastapi 인증
                         UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 
