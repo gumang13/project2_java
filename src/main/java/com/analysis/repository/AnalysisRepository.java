@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface AnalysisRepository extends JpaRepository<Analysis, Long> {
@@ -12,6 +13,23 @@ public interface AnalysisRepository extends JpaRepository<Analysis, Long> {
     @Query("SELECT a.id FROM Analysis a WHERE a.memberId = :memberId")
     List<Long> findIdsByMemberId(@Param("memberId") Long memberId);
 
-    //전달 받은 memberId 에 해당되는 데이터 삭제 후 반환없음
+    // FastAPI 재시작 시 Spring Boot의 미종료 세션 정리
+    List<Analysis> findByEndedAtIsNull();
+
+    // 통계 계산 시 기간 경계에 걸친 분석 세션과 진행 중인 분석 세션을 함께 조회
+    // startedAt~endedAt이 요청 기간과 겹치는 세션을 조회
+    @Query("""
+            SELECT a FROM Analysis a
+            WHERE a.memberId = :memberId
+              AND a.startedAt < :to
+              AND (a.endedAt IS NULL OR a.endedAt >= :from)
+            """)
+    List<Analysis> findByMemberIdAndPeriodOverlap(
+            @Param("memberId") Long memberId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to
+    );
+
+    // 전달 받은 memberId에 해당되는 데이터 삭제 후 반환없음
     void deleteByMemberId(Long memberId);
 }

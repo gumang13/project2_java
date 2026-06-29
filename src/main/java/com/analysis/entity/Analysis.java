@@ -27,4 +27,9 @@ public class Analysis {
 
     @CreatedDate
     private LocalDateTime createdAt;
+
+    public void end(LocalDateTime endedAt) {
+        this.endedAt = endedAt;
+    }
+
 }
