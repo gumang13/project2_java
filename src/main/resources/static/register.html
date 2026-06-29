@@ -32,7 +32,6 @@
         }
 
         body {
-            /* 전체 폰트를 나눔스퀘어라운드로 통일하여 캡처본 서체 반영 */
             font-family: 'NanumSquareRound', sans-serif;
             background: var(--bg);
             color: var(--text);
@@ -344,6 +343,9 @@
     let isEmailVerified = false;
     let timerInterval = null;
 
+    // 💡 인증번호를 예전 방식처럼 '777777'로 고정합니다.
+    const fixedCode = "777777";
+
     function togglePw(id, btn) {
         const input = document.getElementById(id);
         const icon = btn.querySelector('i');
@@ -363,11 +365,13 @@
         document.getElementById('email-error').style.display = 'none';
     }
 
-    // 💡 수정 포인트: 인증 요청 시 알림(alert)창 팝업을 띄우고 숨겨진 입력창과 타이머를 개방합니다.
+    // 💡 [인증 요청] 클릭 시 777777 팝업 알림창 띄우기
     function sendAuthCode() {
-        alert("인증번호가 발송되었습니다."); // 발송 알림 팝업 추가
+        alert("인증번호가 발송되었습니다.\n[테스트 인증번호] : " + fixedCode);
+
         document.getElementById('email-success').style.display = 'flex';
         document.getElementById('code-group').style.display = 'flex';
+
         startTimer(180);
     }
 
@@ -375,6 +379,7 @@
         clearInterval(timerInterval);
         let timer = duration, minutes, seconds;
         const timerDisplay = document.getElementById('timer');
+        document.getElementById('btn-verify-code').disabled = false;
 
         timerInterval = setInterval(() => {
             minutes = parseInt(timer / 60, 10);
@@ -393,10 +398,11 @@
         }, 1000);
     }
 
+    // 💡 입력한 값과 고정된 인증번호 '777777'을 직접 검증
     function verifyAuthCode() {
         const code = document.getElementById('code-input').value.trim();
 
-        if (code.length === 6) {
+        if (code === fixedCode) {
             clearInterval(timerInterval);
             isEmailVerified = true;
 
@@ -415,6 +421,7 @@
             document.getElementById('code-input').className = 'form-input success';
         } else {
             document.getElementById('code-error').style.display = 'flex';
+            document.getElementById('code-success').style.display = 'none';
         }
     }
 
@@ -502,7 +509,8 @@
         const originalBtnHtml = btn.innerHTML;
         btn.innerHTML = '<i class="ti ti-loader" style="animation:spin .8s linear infinite;"></i> 처리 중...';
 
-        fetch('/api/members/signup', {
+        // 회원가입 요청 (/api/members/register)
+        fetch('/api/members/register', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
