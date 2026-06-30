@@ -32,7 +32,7 @@ public class V1AnalyzeController {
         try {
             String rawKey = extractBearer(authorization);
             Long memberId = apiKeyService.authenticateAndGetMemberId(rawKey);
-            // memberId는 이후 사용량/분당 한도(429) 집계 지점에서 활용 - 직므은 인증만.
+            // memberId는 이후 사용량/분당 한도(429) 집계 지점에서 활용 - 지금은 인증만.
         } catch (IllegalArgumentException e) {
             return ApiResponse.error(e.getMessage());
         }
