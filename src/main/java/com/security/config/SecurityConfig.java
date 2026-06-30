@@ -40,6 +40,7 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/api/ping",
                                 "/api/members/signup",
+                                "/api/v1/analyze", // 외부 개발자 API : JWT 면제, 컨트롤러에서 API 키로 인증
                                 "/api/settings/calibration/sessions/result", // Jwt는 면제지만 x-internal-secret 검사
                                 "/api/settings/calibration/analysis/**",
                                 "/api/analysis-sessions/end",

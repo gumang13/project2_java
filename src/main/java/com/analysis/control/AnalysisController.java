@@ -3,6 +3,7 @@ package com.analysis.control;
 import com.analysis.dto.AnalysisStartResponse;
 import com.analysis.service.AnalysisService;
 import com.security.dto.ApiResponse;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.analysis.dto.AnalysisSessionEndRequest;
+
 import org.springframework.web.bind.annotation.RequestBody;
 
 import com.analysis.dto.AnalysisEventSaveRequest; // 분석 이벤트 저장 요청

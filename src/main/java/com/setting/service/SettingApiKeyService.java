@@ -69,6 +69,23 @@ public class SettingApiKeyService {
         return true;
     }
 
+    // 외부에서 API 키 인증 - rawKey -> ACTIVE 키 조회 -> memberId 반환(로그인 없이 키만으로)
+    @Transactional
+    public Long authenticateAndGetMemberId(String rawKey) {
+        if (rawKey == null || rawKey.isBlank()) {
+            throw new IllegalArgumentException("API 키가 필요합니다.");
+        }
+
+        String keyHash = sha256(rawKey);
+
+        SettingApiKey key = apiKeyRepository
+                .findByKeyHashAndStatus(keyHash, ApiKeyStatus.ACTIVE)
+                .orElseThrow(() -> new IllegalArgumentException("유효하지 않거나 폐기된 API 키입니다."));
+
+        key.markUsed(); // 마지막 사용 시각 갱신 (dirty checking)
+        return key.getMemberId();
+    }
+
     // ───────────── 내부 유틸 ─────────────
 
     // 암호학적 난수 키 (256-bit). 일반 Random 금지, SecureRandom 사용.
