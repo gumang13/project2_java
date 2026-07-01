@@ -59,20 +59,19 @@ public class MonitorStatsService {
         };
 
         LocalDate toDate = LocalDate.now();
+        LocalDateTime from = fromDate.atStartOfDay();
+        LocalDateTime to = getPeriodEnd(period);
 
         List<DailyStats> dailyStats =
                 dailyStatsRepository.findByMemberIdAndStatDateBetween(
                         id,
-                        fromDate,
-                        toDate
+                        from,
+                        to
                 );
 
         if (dailyStats.isEmpty()) {
             return createEmptyStats(period);
         }
-
-        LocalDateTime from = fromDate.atStartOfDay();
-        LocalDateTime to = getPeriodEnd(period);
         List<Analysis> analyses = analysisRepository.findByMemberIdAndPeriodOverlap(id, from, to);
         List<Long> analysisIds = analyses.stream()
                 .map(Analysis::getId)

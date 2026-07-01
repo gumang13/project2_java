@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface ExerciseRoutineRepository extends JpaRepository<ExerciseRoutine, Long> {
     List<ExerciseRoutine> findByMemberIdIsNull();
+    List<ExerciseRoutine> findByMemberIdOrderByUpdatedAtDesc(Long memberId);
 }

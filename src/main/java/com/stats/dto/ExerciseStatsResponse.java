@@ -11,29 +11,34 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 public class ExerciseStatsResponse {
-    // 연속으로 운동한 일수
+    // ?곗냽?쇰줈 ?대룞???쇱닔
     private int streak;
 
-    // 요청 기간 안에서 완료한 운동 세션 수
+    // ?붿껌 湲곌컙 ?덉뿉???꾨즺???대룞 ?몄뀡 ??
     private int sessions;
 
-    // 요청 기간 안의 총 운동 시간(분)
+    private int completedPoses;
+
+    private int bestDailyPoses;
+
+    // ?붿껌 湲곌컙 ?덉쓽 珥??대룞 ?쒓컙(遺?
     private int minutes;
 
-    // 시작한 세션 중 완료한 세션 비율(%)
+    // ?쒖옉???몄뀡 以??꾨즺???몄뀡 鍮꾩쑉(%)
     private int completion;
 
-    // 스트레칭/요가 세션 수
-    // 프론트 EXERCISE_DATA.type 구조와 맞춘 필드명
+    // ?ㅽ듃?덉묶/?붽? ?몄뀡 ??
+    // ?꾨줎??EXERCISE_DATA.type 援ъ“? 留욎텣 ?꾨뱶紐?
     private ExerciseTypeResponse type;
 
-    // 운동 캘린더 표시 데이터
-    // 프론트 EXERCISE_DATA.cal 구조와 맞춘 필드명
+    // ?대룞 罹섎┛???쒖떆 ?곗씠??
+    // ?꾨줎??EXERCISE_DATA.cal 援ъ“? 留욎텣 ?꾨뱶紐?
     private List<ExerciseCalendarResponse> cal;
 
-    // 자세별 코칭 횟수 또는 평균 코칭 횟수
+    // ?먯꽭蹂?肄붿묶 ?잛닔 ?먮뒗 ?됯퇏 肄붿묶 ?잛닔
     private List<ExerciseCoachingResponse> coaching;
 
-    // 최근 운동 세션 로그
+    // 理쒓렐 ?대룞 ?몄뀡 濡쒓렇
     private List<ExerciseLogResponse> logs;
 }
+
