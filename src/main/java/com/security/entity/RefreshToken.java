@@ -31,7 +31,7 @@ public class RefreshToken {
     @Column(nullable = false)
     private LocalDateTime expiresAt;
 
-    // 로그아웃, 무활동 만료, 재발급 rotation 시 폐기 여부
+    // 로그아웃, 무활동 만료, 재발급(rotation) 시 토큰 폐기 여부
     @Column(nullable = false)
     private boolean revoked = false;
 

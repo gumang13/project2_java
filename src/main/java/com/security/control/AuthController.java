@@ -30,9 +30,7 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider tokenProvider;
     private final MemberRepository memberRepository;
-    
     private final RefreshTokenService refreshTokenService;
-
 
     @PostMapping("/login")
     public ApiResponse<TokenResponse> login(
@@ -40,28 +38,30 @@ public class AuthController {
             HttpServletResponse response
     ) {
         try {
-            // ?꾩씠??鍮꾨쾲 寃利?(?由щ㈃ ?덉쇅 諛쒖깮)
+            // 아이디/비밀번호 검증: 실패하면 AuthenticationException 발생
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(req.getEmail(), req.getPassword()));
         } catch (AuthenticationException e) {
-            return ApiResponse.error("?꾩씠???먮뒗 鍮꾨?踰덊샇媛 ??몄뒿?덈떎");
+            return ApiResponse.error("아이디 또는 비밀번호가 틀렸습니다");
         }
-        Long userId = memberRepository.findByEmail(req.getEmail())
-                .orElseThrow(() -> new RuntimeException("?뚯썝 ?뺣낫瑜?李얠쓣 ???놁뒿?덈떎.")).getId();
 
-        // ?듦낵?섎㈃ ?좏겙 諛쒓툒
+        Long userId = memberRepository.findByEmail(req.getEmail())
+                .orElseThrow(() -> new RuntimeException("회원 정보를 찾을 수 없습니다."))
+                .getId();
+
+        // API 요청에 사용할 Access Token 발급
         String token = tokenProvider.createToken(userId, req.getEmail());
 
         // 로그인 시 기존 Refresh Token을 모두 삭제하여 한 계정당 하나의 세션만 유지
         refreshTokenService.deleteAllByMemberId(userId);
 
-        // Access Token ?щ컻湲됱뿉 ?ъ슜??Refresh Token 諛쒓툒
+        // Access Token 재발급에 사용할 Refresh Token 발급
         String refreshToken = refreshTokenService.issue(userId);
 
-        // Refresh Token? JavaScript?먯꽌 ?쎌쓣 ???녿룄濡?HttpOnly Cookie?????
+        // Refresh Token은 JavaScript에서 읽을 수 없도록 HttpOnly Cookie에 저장
         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
                 .httpOnly(true)
-                .secure(false) // 濡쒖뺄 媛쒕컻 ?섍꼍?먯꽌??false, HTTPS 諛고룷 ?섍꼍?먯꽌??true 沅뚯옣
+                .secure(false) // 로컬 개발 환경은 false, HTTPS 배포 환경은 true 권장
                 .path("/api/auth")
                 .maxAge(Duration.ofHours(12))
                 .sameSite("Lax")
@@ -77,31 +77,31 @@ public class AuthController {
             HttpServletRequest request,
             HttpServletResponse response
     ) {
-        // 釉뚮씪?곗?媛 HttpOnly refreshToken 荑좏궎瑜??먮룞?쇰줈 ?④퍡 蹂대깂
-        // JavaScript?먯꽌?????좏겙 媛믪쓣 吏곸젒 ?쎌쓣 ???놁쓬
+        // 브라우저가 HttpOnly refreshToken 쿠키를 자동으로 함께 보냄
+        // JavaScript는 쿠키 값을 읽지 못하지만, 요청에는 자동 첨부됨
         String rawRefreshToken = getRefreshTokenFromCookie(request);
 
         if (rawRefreshToken == null) {
-            return ApiResponse.error("Refresh Token???놁뒿?덈떎.");
+            return ApiResponse.error("Refresh Token이 없습니다.");
         }
 
         try {
-            // DB????λ맂 ?댁떆媛? 留뚮즺 ?쒓컙, ?먭린 ?щ?瑜?寃利?            RefreshToken savedRefreshToken = refreshTokenService.validate(rawRefreshToken);
-
-            // 濡쒓렇????諛쒓툒??Access Token泥섎읆 subject???대찓?쇱쓣 ?ｊ린 ?꾪빐 議고쉶
+            // DB에 저장된 해시와 만료 시간, 폐기 여부를 검증
             RefreshToken savedRefreshToken = refreshTokenService.validate(rawRefreshToken);
 
+            // 새 Access Token을 만들기 위해 회원 이메일 조회
             String email = memberRepository.findById(savedRefreshToken.getMemberId())
-                    .orElseThrow(() -> new RuntimeException("?뚯썝 ?뺣낫瑜?李얠쓣 ???놁뒿?덈떎."))
+                    .orElseThrow(() -> new RuntimeException("회원 정보를 찾을 수 없습니다."))
                     .getEmail();
 
-            // Refresh Token rotation: 湲곗〈 ?좏겙???먭린?섍퀬 ???좏겙 諛쒓툒
+            // Refresh Token rotation: 기존 토큰은 폐기하고 새 토큰 발급
             String newRefreshToken = refreshTokenService.rotate(rawRefreshToken);
 
-            // API Authorization ?ㅻ뜑???ъ슜????Access Token 諛쒓툒
+            // API Authorization 헤더에 다시 넣을 새 Access Token 발급
             String newAccessToken = tokenProvider.createToken(savedRefreshToken.getMemberId(), email);
 
-            ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", newRefreshToken).httpOnly(true)
+            ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", newRefreshToken)
+                    .httpOnly(true)
                     .secure(false)
                     .path("/api/auth")
                     .maxAge(Duration.ofHours(12))
@@ -112,7 +112,7 @@ public class AuthController {
 
             return ApiResponse.success(new TokenResponse(newAccessToken));
         } catch (IllegalArgumentException e) {
-            return ApiResponse.error("Refresh Token???좏슚?섏? ?딆뒿?덈떎.");
+            return ApiResponse.error("Refresh Token이 유효하지 않습니다.");
         }
     }
 
@@ -121,15 +121,15 @@ public class AuthController {
             HttpServletRequest request,
             HttpServletResponse response
     ) {
-        // ?꾩옱 釉뚮씪?곗?媛 蹂대궦 Refresh Token 荑좏궎瑜??뺤씤
+        // 현재 요청에 포함된 Refresh Token 쿠키 조회
         String rawRefreshToken = getRefreshTokenFromCookie(request);
 
-        // DB????λ맂 Refresh Token???먭린 泥섎━
+        // DB에 저장된 Refresh Token을 폐기 처리
         if (rawRefreshToken != null) {
             refreshTokenService.revoke(rawRefreshToken);
         }
 
-        // 釉뚮씪?곗?????λ맂 HttpOnly refreshToken 荑좏궎 ??젣
+        // 브라우저에 저장된 HttpOnly refreshToken 쿠키 삭제
         ResponseCookie deleteCookie = ResponseCookie.from("refreshToken", "")
                 .httpOnly(true)
                 .secure(false)
@@ -143,7 +143,7 @@ public class AuthController {
         return ApiResponse.success(null);
     }
 
-    // 釉뚮씪?곗?媛 蹂대궦 荑좏궎 紐⑸줉?먯꽌 refreshToken 媛믪쓣 爰쇰깂
+    // 브라우저가 보낸 쿠키 목록에서 refreshToken 값을 꺼냄
     private String getRefreshTokenFromCookie(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
 

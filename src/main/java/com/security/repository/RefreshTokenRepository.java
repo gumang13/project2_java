@@ -11,6 +11,6 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     Optional<RefreshToken> findByTokenHash(String tokenHash);
 
     // 특정 회원의 Refresh Token을 모두 삭제할 때 사용
-    // 예: 로그아웃, 회원탈퇴, 강제 세션 초기화
+    // 예: 로그인 시 기존 세션 초기화, 회원 탈퇴, 강제 로그아웃
     void deleteByMemberId(Long memberId);
 }

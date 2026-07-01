@@ -54,7 +54,7 @@ public class RefreshTokenService {
         return refreshToken;
     }
 
-    // 기존 Refresh Token을 폐기하고 새 Refresh Token을 발급
+    // 기존 Refresh Token을 폐기하고 새 Refresh Token 발급
     public String rotate(String rawToken) {
         RefreshToken refreshToken = validate(rawToken);
         refreshToken.revoke();
@@ -82,7 +82,7 @@ public class RefreshTokenService {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
-    // DB에는 Refresh Token 원문이 아니라  해시값만 저장
+    // DB에는 Refresh Token 원문이 아닌 해시값만 저장
     private String hash(String rawToken) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
