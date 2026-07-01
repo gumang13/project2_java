@@ -43,35 +43,22 @@ public class ExerciseStatsService {
 
     @Transactional(readOnly = true)
     public ExerciseStatsResponse getExerciseStats(String period, Long memberId) {
-//==========================================================================================================
-//==========================================================================================================
-
-
-        // 1. ?붿껌??period 湲곗??쇰줈 DB 議고쉶 湲곌컙
         LocalDateTime from = getPeriodStart(period);
         LocalDateTime to = LocalDateTime.now();
 
-        // 2. 濡쒓렇?명븳 ?뚯썝???붿껌 湲곌컙 ???대룞 ?몄뀡???ㅻ옒???쒖꽌濡?議고쉶
+        // 요청 기간 안의 회원 운동 세션을 시간순으로 조회합니다.
         List<ExerciseSession> sessions = exerciseStatsRepository
                 .findByMemberIdAndStartedAtBetweenOrderByStartedAtAsc(memberId, from, to);
 
-        // 2-1. ?붾㈃???대룞 ?잛닔, ?쒓컙, 醫낅쪟 鍮꾩쨷, 罹섎┛?붾뒗 ?꾨즺 ?몄뀡 湲곗??쇰줈 怨꾩궛
+        // 화면의 운동 횟수, 시간, 종류 비중, 캘린더는 완료 세션 기준으로 계산합니다.
         List<ExerciseSession> completedSessions = sessions.stream()
                 .filter(this::isCompleted)
                 .toList();
 
-        // 3. 猷⑦떞 ?대쫫/category 議고쉶??Map
         Map<Long, ExerciseRoutine> routineMap = getRoutineMap(sessions);
-
-        // 3-1. ?꾨즺 ?몄뀡?ㅼ쓽 ?먯꽭蹂?寃곌낵
         List<PoseResult> poseResults = getPoseResults(completedSessions);
-
-        // 3-2. ?먯꽭 ?대쫫 ?쒖떆??
         Map<Long, ExercisePose> poseMap = getPoseMap(poseResults);
 
-
-
-        // 9. ?꾨줎???대룞 ?듦퀎 ?붾㈃???묐떟
         return ExerciseStatsResponse.builder()
                 .streak(calculateStreak(memberId))
                 .sessions(completedSessions.size())
@@ -86,12 +73,6 @@ public class ExerciseStatsService {
                 .build();
     }
 
-
-//===========================================================================================================
-//===========================================================================================================
-
-
-    // 1-1. period 媛믪뿉 ?곕씪 ?듦퀎 議고쉶 ?쒖옉 ?쒓컖??怨꾩궛
     private LocalDateTime getPeriodStart(String period) {
         LocalDate today = LocalDate.now();
 
@@ -99,27 +80,15 @@ public class ExerciseStatsService {
             case "day" -> today.atStartOfDay();
             case "week" -> today.minusDays(6).atStartOfDay();
             case "month" -> today.minusDays(29).atStartOfDay();
-            default -> throw new IllegalArgumentException("period 媛믪? day, week, month 以??섎굹?ъ빞 ?⑸땲??");
+            default -> throw new IllegalArgumentException("period 값은 day, week, month 중 하나여야 합니다.");
         };
     }
 
-
-//==========================================================================================================
-//==========================================================================================================
-
-
-    // 2-2. ?꾨즺 ?몄뀡?몄? ?뺤씤
     private boolean isCompleted(ExerciseSession session) {
         return session.getStatus() == SessionStatus.COMPLETED;
     }
 
-
-//==========================================================================================================
-//==========================================================================================================
-
-
-    // 3-3. ?몄뀡 紐⑸줉?먯꽌 routineId瑜?紐⑥븘 猷⑦떞 ?뺣낫瑜???踰덉뿉 議고쉶?⑸땲??
-    //      諛섎났臾??덉뿉??findById瑜??щ윭 踰??몄텧?섏? ?딄린 ?꾪븳 以鍮??묒뾽?낅땲??
+    // 세션 목록에서 routineId를 모아 루틴 정보를 한 번에 조회합니다.
     private Map<Long, ExerciseRoutine> getRoutineMap(List<ExerciseSession> sessions) {
         Set<Long> routineIds = sessions.stream()
                 .map(ExerciseSession::getRoutineId)
@@ -133,9 +102,6 @@ public class ExerciseStatsService {
                 .collect(Collectors.toMap(ExerciseRoutine::getId, Function.identity()));
     }
 
-
-
-    // 3-4. ?꾨즺 ?몄뀡 id 紐⑸줉?쇰줈 ?먯꽭蹂?寃곌낵瑜???踰덉뿉 議고쉶?⑸땲??
     private List<PoseResult> getPoseResults(List<ExerciseSession> sessions) {
         List<Long> sessionIds = sessions.stream()
                 .map(ExerciseSession::getId)
@@ -148,9 +114,6 @@ public class ExerciseStatsService {
         return exercisePoseResultStatsRepository.findBySessionIdIn(sessionIds);
     }
 
-
-
-    // 3-5. poseResult???ㅼ뼱?덈뒗 poseId濡??먯꽭 ?대쫫 ?뺣낫瑜???踰덉뿉 議고쉶?⑸땲??
     private Map<Long, ExercisePose> getPoseMap(List<PoseResult> poseResults) {
         Set<Long> poseIds = poseResults.stream()
                 .map(PoseResult::getPoseId)
@@ -164,13 +127,7 @@ public class ExerciseStatsService {
                 .collect(Collectors.toMap(ExercisePose::getId, Function.identity()));
     }
 
-
-//==========================================================================================================
-//==========================================================================================================
-
-
-    // 4-1. ?ㅻ뒛遺??嫄곌씀濡?蹂대㈃???곗냽?쇰줈 ?꾨즺 ?대룞???덉뿀???좎쭨 ?섎? 怨꾩궛?⑸땲??
-    //      ?? ?ㅻ뒛, ?댁젣, 洹몄젣 ?대룞?덇퀬 3???꾩? ?놁쑝硫?streak = 3
+    // 오늘부터 거꾸로 보며 연속으로 운동을 완료한 날짜 수를 계산합니다.
     private int calculateStreak(Long memberId) {
         List<ExerciseSession> completedSessions = exerciseStatsRepository
                 .findByMemberIdAndStatusOrderByStartedAtDesc(memberId, SessionStatus.COMPLETED);
@@ -190,8 +147,6 @@ public class ExerciseStatsService {
         return streak;
     }
 
-
-    // 4-2. ?꾨즺 ?몄뀡?ㅼ쓽 珥??대룞 ?쒓컙??遺??⑥쐞濡?怨꾩궛?⑸땲??
     private int calculateTotalMinutes(List<ExerciseSession> sessions) {
         long totalSeconds = sessions.stream()
                 .mapToLong(this::calculateDurationSeconds)
@@ -206,6 +161,7 @@ public class ExerciseStatsService {
                 .sum();
     }
 
+    // 기간 안에서 하루에 가장 많이 완료한 자세 수를 계산합니다.
     private int calculateBestDailyPoses(List<ExerciseSession> sessions) {
         return sessions.stream()
                 .filter(session -> session.getStartedAt() != null)
@@ -220,9 +176,6 @@ public class ExerciseStatsService {
                 .orElse(0);
     }
 
-
-    // 4-3. ?몄뀡 ?섎굹???쒖옉~醫낅즺 ?쒓컙??珥??⑥쐞濡?怨꾩궛?⑸땲??
-    //      醫낅즺 ?쒓컙???녿뒗 ?몄뀡? ?듦퀎 ?쒓컙???ы븿?섏? ?딆뒿?덈떎.
     private long calculateDurationSeconds(ExerciseSession session) {
         if (session.getStartedAt() == null || session.getEndedAt() == null) {
             return 0;
@@ -231,9 +184,6 @@ public class ExerciseStatsService {
         return Math.max(0, Duration.between(session.getStartedAt(), session.getEndedAt()).getSeconds());
     }
 
-
-
-    // 4-4. ?꾩＜??= ?꾨즺 ?몄뀡 ??/ ?쒖옉???꾩껜 ?몄뀡 ??* 100
     private int calculateCompletionRate(List<ExerciseSession> sessions, List<ExerciseSession> completedSessions) {
         if (sessions.isEmpty()) {
             return 0;
@@ -242,12 +192,6 @@ public class ExerciseStatsService {
         return (int) Math.round(completedSessions.size() * 100.0 / sessions.size());
     }
 
-
-//==========================================================================================================
-//==========================================================================================================
-
-
-    // 5-1. ?꾨즺 ?몄뀡??猷⑦떞 category瑜?蹂닿퀬 ?ㅽ듃?덉묶/?붽? ?잛닔瑜??됰땲??
     private ExerciseTypeResponse buildExerciseType(
             List<ExerciseSession> sessions,
             Map<Long, ExerciseRoutine> routineMap
@@ -274,13 +218,6 @@ public class ExerciseStatsService {
                 .build();
     }
 
-
-//==========================================================================================================
-//==========================================================================================================
-
-
-    // 6-1. ?대룞 罹섎┛?붿뿉 ?쒖떆???좎쭨蹂??대룞?됱쓣 留뚮벊?덈떎.
-    //      week/day??7移? month??30移몄쑝濡?援ъ꽦?⑸땲??
     private List<ExerciseCalendarResponse> buildCalendar(String period, List<ExerciseSession> sessions) {
         LocalDate today = LocalDate.now();
         LocalDate fromDate = period.equals("month") ? today.minusDays(29) : today.minusDays(6);
@@ -306,9 +243,6 @@ public class ExerciseStatsService {
         return calendar;
     }
 
-
-    // 6-2. 罹섎┛??? ?덉뿉 ?쒖떆???쇰꺼?낅땲??
-    //      month???좎쭨 ?レ옄, day/week???붿씪 ??湲?먮? ?ъ슜?⑸땲??
     private String createCalendarLabel(String period, LocalDate date) {
         if (period.equals("month")) {
             return String.valueOf(date.getDayOfMonth());
@@ -325,10 +259,6 @@ public class ExerciseStatsService {
         };
     }
 
-
-
-    // 6-3. ?섎（ ?대룞 ?몄뀡 ?섎? ?붾뵒 ?됱긽 ?④퀎濡?諛붽퓠?덈떎.
-    //      0: ?놁쓬, 1: ?곸쓬, 2: 蹂댄넻, 3: 留롮쓬
     private int toActivityLevel(long count) {
         if (count <= 0) {
             return 0;
@@ -342,13 +272,6 @@ public class ExerciseStatsService {
         return 3;
     }
 
-
-//==========================================================================================================
-//==========================================================================================================
-
-
-    // 7-1. ?먯꽭蹂?肄붿묶 ?잛닔瑜?怨꾩궛?⑸땲??
-    //      媛숈? ?먯꽭媛 ?щ윭 ?몄뀡???섏삤硫?coachCount瑜??⑹궛?????꾨즺 ?몄뀡 ?섎줈 ?섎닠 ?됯퇏???낅땲??
     private List<ExerciseCoachingResponse> buildCoaching(
             List<PoseResult> poseResults,
             Map<Long, ExercisePose> poseMap,
@@ -368,18 +291,11 @@ public class ExerciseStatsService {
                 .toList();
     }
 
-
-
-    // 7-2. poseId???대떦?섎뒗 ?먯꽭 ?대쫫??媛?몄샃?덈떎.
     private String getPoseName(Long poseId, Map<Long, ExercisePose> poseMap) {
         ExercisePose pose = poseMap.get(poseId);
-        return pose == null ? "?????녿뒗 ?먯꽭" : pose.getNameKo();
+        return pose == null ? "알 수 없는 자세" : pose.getNameKo();
     }
 
-
-
-    // 7-3. ?⑹궛 肄붿묶 ?잛닔瑜??몄뀡???됯퇏?쇰줈 諛붽퓠?덈떎.
-    //      ?뚯닔 泥レ㎏ ?먮━源뚯? 諛섏삱由쇳빀?덈떎.
     private double toAverageCount(int totalCount, int completedSessionCount) {
         if (completedSessionCount == 0) {
             return 0;
@@ -388,12 +304,6 @@ public class ExerciseStatsService {
         return Math.round((totalCount / (double) completedSessionCount) * 10) / 10.0;
     }
 
-
-//==========================================================================================================
-//==========================================================================================================
-
-
-    // 8-1. 湲곌컙 ??理쒓렐 ?대룞 ?몄뀡 5媛쒕? 濡쒓렇 DTO濡?蹂?섑빀?덈떎.
     private List<ExerciseLogResponse> buildLogs(
             Long memberId,
             LocalDateTime from,
@@ -408,8 +318,6 @@ public class ExerciseStatsService {
                 .toList();
     }
 
-
-    // 8-2. ?몄뀡 ?섎굹瑜?理쒓렐 ?대룞 濡쒓렇 ??以꾨줈 蹂?섑빀?덈떎.
     private ExerciseLogResponse buildLog(ExerciseSession session, ExerciseRoutine routine) {
         List<PoseResult> poseResults = exercisePoseResultStatsRepository.findBySessionId(session.getId());
         int coachCount = poseResults.stream()
@@ -418,7 +326,7 @@ public class ExerciseStatsService {
 
         return ExerciseLogResponse.builder()
                 .type(toExerciseTypeText(routine))
-                .name(routine == null ? "?????녿뒗 猷⑦떞" : routine.getName())
+                .name(routine == null ? "알 수 없는 루틴" : routine.getName())
                 .time(formatPerformedAt(session.getStartedAt()))
                 .dur(formatDuration(calculateDurationSeconds(session)))
                 .done(session.getCompletedPoses() + "/" + session.getTotalPoses())
@@ -426,8 +334,6 @@ public class ExerciseStatsService {
                 .build();
     }
 
-
-    // 8-3. ?꾨줎??諛곗? class? 留욎텛湲??꾪빐 stretch/yoga 臾몄옄?대줈 蹂?섑빀?덈떎.
     private String toExerciseTypeText(ExerciseRoutine routine) {
         if (routine == null || routine.getCategory() == null) {
             return "stretch";
@@ -436,10 +342,6 @@ public class ExerciseStatsService {
         return routine.getCategory() == ExerciseCategory.YOGA ? "yoga" : "stretch";
     }
 
-
-
-    // 8-4. 理쒓렐 ?대룞 濡쒓렇???쒖떆???쒓컙 臾멸뎄瑜?留뚮벊?덈떎.
-    //      ?ㅻ뒛/?댁젣???쒓?濡? 洹????좎쭨??M/d HH:mm ?뺤떇?쇰줈 ?쒖떆?⑸땲??
     private String formatPerformedAt(LocalDateTime performedAt) {
         if (performedAt == null) {
             return "";
@@ -450,17 +352,15 @@ public class ExerciseStatsService {
         String time = performedAt.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm"));
 
         if (date.equals(today)) {
-            return "?ㅻ뒛 " + time;
+            return "오늘 " + time;
         }
         if (date.equals(today.minusDays(1))) {
-            return "?댁젣 " + time;
+            return "어제 " + time;
         }
 
         return performedAt.format(DateTimeFormatter.ofPattern("M/d HH:mm"));
     }
 
-
-    // 8-5. 珥??⑥쐞 ?대룞 ?쒓컙??"n遺?n珥? ?쒖떆 臾몄옄?대줈 諛붽퓠?덈떎.
     private String formatDuration(long seconds) {
         long minutes = seconds / 60;
         long remainingSeconds = seconds % 60;
@@ -468,4 +368,3 @@ public class ExerciseStatsService {
         return minutes + "분 " + remainingSeconds + "초";
     }
 }
-
