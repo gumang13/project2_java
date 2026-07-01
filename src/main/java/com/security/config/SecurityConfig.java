@@ -12,6 +12,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.config.Customizer;
+import org.springframework.web.cors.*;
 
 // fastapi 요청 인증
 /*
@@ -33,6 +35,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                .cors(Customizer.withDefaults())// ← 추가 (CORS 활성화)
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .formLogin(f -> f.disable())
@@ -42,6 +45,7 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/api/ping",
                                 "/api/members/signup",
+                                "/api/v1/**", // 외부 API, 키 인증은 컨트롤러에서
                                 "/api/settings/calibration/sessions/result", // Jwt는 면제지만 x-internal-secret 검사
                                 "/api/settings/calibration/analysis/**",
                                 "/api/analysis-sessions/end",
@@ -68,4 +72,15 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration c = new CorsConfiguration();
+        c.setAllowedOriginPatterns(java.util.List.of("*"));   // 데모용. 운영 땐 콘솔 주소로 좁히기
+        c.setAllowedMethods(java.util.List.of("*"));
+        c.setAllowedHeaders(java.util.List.of("*"));
+        UrlBasedCorsConfigurationSource src = new UrlBasedCorsConfigurationSource();
+        src.registerCorsConfiguration("/**", c);
+        return src;
+    }
+
 }
