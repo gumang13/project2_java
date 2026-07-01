@@ -1,14 +1,18 @@
 package com.setting.control;
 
+import com.analysis.constant.EventType;
+import com.analysis.entity.AnalysisEvent;
+import com.analysis.repository.AnalysisEventRepository;
 import com.security.dto.ApiResponse;
+import com.setting.dto.ExPostureDataListResponse;
 import com.setting.service.SettingApiKeyService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
+import java.util.List;
 
 // 외부 개발자용 API 키 기반 접근 컨트롤러
 @RestController
@@ -17,40 +21,65 @@ import java.io.IOException;
 public class ExApiKeyController {
 
     private final SettingApiKeyService apiKeyService;
+    private final AnalysisEventRepository analysisEventRepository;
 
-    // FastAPI 주소 (env : FASTAPI_BASE_URL, 기본 http://localhost:8000)
-    private final RestClient fastApiClient = RestClient.create();
-    private static final String FASTAPI_BASE_URL =
-            System.getenv().getOrDefault("FASTAPI_BASE_URL", "http://localhost:8000");
+    private static final int MAX_PER_PAGE = 100;
 
-    // 외부 개발자용 단일 이미지 자세 분석
-    @PostMapping(value = "/analyze", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ApiResponse<Object> analyze(
+    /**
+     * 외부 개발자용 자세 데이터 목록 조회
+     * 누구의 자세인지는 밝히지 않고, 페이지 단위(기본 10개)로 판정 결과만 표시
+     *
+     * GET /api/v1/posture-data-list?page=1&perPage=10
+     * 인증 : Authorization: Bearer ptk_...
+     */
+    @GetMapping("/posture-data-list")
+    public ApiResponse<ExPostureDataListResponse> postureDataList(
             @RequestHeader(value = "Authorization", required = false) String authorization,
-            @RequestParam("image") MultipartFile image
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "perPage", defaultValue = "10") int perPage
     ) {
         // 1) API 키 인증 (Authorization : Bearer ptk_...)
         try {
             String rawKey = extractBearer(authorization);
-            Long memberId = apiKeyService.authenticateAndGetMemberId(rawKey);
-            // memberId는 이후 사용량/분당 한도(429) 집계 지점에서 활용 - 지금은 인증만.
+            apiKeyService.authenticateAndGetMemberId(rawKey); // 인증만 수행 (개인 식별정보는 응답에 미노출)
         } catch (IllegalArgumentException e) {
             return ApiResponse.error(e.getMessage());
         }
 
-        // 2) FastAPI 단일 분석 호출 (이미지 바이트를 그대로 전달)
-        try {
-            Object result = fastApiClient.post()
-                    .uri(FASTAPI_BASE_URL + "/analysis/analyze-once")
-                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                    .body(image.getBytes())
-                    .retrieve()
-                    .body(Object.class);
+        // 2) 페이지 파라미터 정규화 (1-base → 0-base, 상한 제한)
+        int safePage = Math.max(page, 1);
+        int safePerPage = Math.min(Math.max(perPage, 1), MAX_PER_PAGE);
 
-            return ApiResponse.success(result);
-        } catch (IOException e) {
-            return ApiResponse.error("이미지 읽기에 실패했습니다.");
-        }
+        // 3) 최신 순으로 페이징 조회 (memberId·analysisId 등 개인정보는 매핑에서 제외)
+        Page<AnalysisEvent> found = analysisEventRepository.findAll(
+                PageRequest.of(safePage - 1, safePerPage, Sort.by(Sort.Direction.DESC, "eventAt"))
+        );
+
+        List<ExPostureDataListResponse.Item> items = found.getContent().stream()
+                .map(e -> new ExPostureDataListResponse.Item(
+                        e.getId(),
+                        toResult(e.getEventType()),
+                        null, // cvaAngle: 현재 스키마 미저장 → null
+                        e.getEventAt()
+                ))
+                .toList();
+
+        ExPostureDataListResponse body = new ExPostureDataListResponse(
+                safePage,
+                safePerPage,
+                found.getTotalElements(),
+                items.size(),
+                items
+        );
+
+        return ApiResponse.success(body);
+    }
+
+    // 이벤트 유형 → 외부 공개용 판정 문자열
+    private String toResult(EventType type) {
+        if (type == EventType.GOOD_POSTURE) return "normal";
+        if (type == EventType.BAD_POSTURE) return "turtle_neck";
+        return "unknown";
     }
 
     private String extractBearer(String authorization) {
