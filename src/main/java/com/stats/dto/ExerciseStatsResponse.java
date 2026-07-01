@@ -17,7 +17,10 @@ public class ExerciseStatsResponse {
     // 요청 기간 안에서 완료한 운동 세션 수
     private int sessions;
 
-    // 요청 기간 안의 총 운동 시간(분)
+    private int completedPoses;
+
+    private int bestDailyPoses;
+
     private int minutes;
 
     // 시작한 세션 중 완료한 세션 비율(%)
@@ -28,7 +31,6 @@ public class ExerciseStatsResponse {
     private ExerciseTypeResponse type;
 
     // 운동 캘린더 표시 데이터
-    // 프론트 EXERCISE_DATA.cal 구조와 맞춘 필드명
     private List<ExerciseCalendarResponse> cal;
 
     // 자세별 코칭 횟수 또는 평균 코칭 횟수
@@ -37,3 +39,4 @@ public class ExerciseStatsResponse {
     // 최근 운동 세션 로그
     private List<ExerciseLogResponse> logs;
 }
+

@@ -18,6 +18,9 @@ public class ExercisePose {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true)
+    private String poseKey;
+
     @Column
     private String nameKo;
 
@@ -35,8 +38,4 @@ public class ExercisePose {
 
     @CreatedDate
     private LocalDateTime createdAt;
-
-
-
-
 }

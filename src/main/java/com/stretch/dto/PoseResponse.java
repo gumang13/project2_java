@@ -5,12 +5,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
-// PoseDto.java
 @Getter
 @Builder
 @AllArgsConstructor
 public class PoseResponse {
     private Long poseId;
+    private String poseKey;
     private String nameKo;
     private String nameEn;
     private int holdSec;
@@ -18,6 +18,7 @@ public class PoseResponse {
     public static PoseResponse from(ExercisePose pose) {
         return PoseResponse.builder()
                 .poseId(pose.getId())
+                .poseKey(pose.getPoseKey())
                 .nameKo(pose.getNameKo())
                 .nameEn(pose.getNameEn())
                 .holdSec(pose.getHoldSec())

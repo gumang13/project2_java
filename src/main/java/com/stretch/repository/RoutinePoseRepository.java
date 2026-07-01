@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface RoutinePoseRepository extends JpaRepository<RoutinePose, Long> {
     List<RoutinePose> findByRoutineIdOrderByPoseOrder(Long routineId);
+    void deleteByRoutineId(Long routineId);
 }
