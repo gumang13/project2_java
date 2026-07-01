@@ -1,4 +1,4 @@
-package com.analysis.control;
+package com.setting.control;
 
 import com.security.dto.ApiResponse;
 import com.setting.service.SettingApiKeyService;
@@ -10,10 +10,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 
+// 외부 개발자용 API 키 기반 접근 컨트롤러
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
-public class V1AnalyzeController {
+public class ExApiKeyController {
 
     private final SettingApiKeyService apiKeyService;
 
