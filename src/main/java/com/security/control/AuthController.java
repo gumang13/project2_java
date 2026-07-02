@@ -34,9 +34,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ApiResponse<TokenResponse> login(
-            @RequestBody MemberDto req,
-            HttpServletResponse response
-    ) {
+            @RequestBody MemberDto req, HttpServletResponse response ) {
         try {
             // 아이디/비번 검증 (틀리면 예외 발생)
             authenticationManager.authenticate(
@@ -46,8 +44,7 @@ public class AuthController {
         }
 
         Long userId = memberRepository.findByEmail(req.getEmail())
-                .orElseThrow(() -> new RuntimeException("회원 정보를 찾을 수 없습니다."))
-                .getId();
+                .orElseThrow(() -> new RuntimeException("회원 정보를 찾을 수 없습니다.")).getId();
 
         // 통과하면 토큰 발급
         String token = tokenProvider.createToken(userId, req.getEmail());
