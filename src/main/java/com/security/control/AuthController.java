@@ -33,8 +33,7 @@ public class AuthController {
     private final RefreshTokenService refreshTokenService;
 
     @PostMapping("/login")
-    public ApiResponse<TokenResponse> login(
-            @RequestBody MemberDto req, HttpServletResponse response ) {
+    public ApiResponse<TokenResponse> login( @RequestBody MemberDto req, HttpServletResponse response ) {
         try {
             // 아이디/비번 검증 (틀리면 예외 발생)
             authenticationManager.authenticate(
