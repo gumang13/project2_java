@@ -33,7 +33,19 @@ public class DailyStats {
     @Column
     private int totalMeasureSec;
 
+    public static DailyStats create(Long memberId, LocalDateTime statDate) {
+        DailyStats dailyStats = new DailyStats();
+        dailyStats.memberId = memberId;
+        dailyStats.statDate = statDate;
+        return dailyStats;
+    }
 
-
+    // 같은 날짜에 분석을 여러 번 종료할 수 있으므로 일별 집계는 누적한다.
+    public void addMeasuredSeconds(int alerts, int goodSeconds, int badSeconds, int totalSeconds) {
+        this.notiCount += Math.max(0, alerts);
+        this.goodPostureSec += Math.max(0, goodSeconds);
+        this.badPostureSec += Math.max(0, badSeconds);
+        this.totalMeasureSec += Math.max(0, totalSeconds);
+    }
 
 }

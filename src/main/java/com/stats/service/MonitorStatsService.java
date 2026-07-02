@@ -150,36 +150,13 @@ public class MonitorStatsService {
         MonitorStatsDto dto = new MonitorStatsDto();
 
         // BAD_POSTURE와 GOOD_POSTURE를 시간순으로 짝지어 계산하기 위해 정렬합니다.
-        events.sort(Comparator.comparing(AnalysisEvent::getEventAt));
-
-        int alerts = 0;
-        long badSeconds = 0;
-        LocalDateTime badStartedAt = null;
+        BadPostureStats badPostureStats = calculateBadPostureStats(events, analyses, from, to);
+        int alerts = badPostureStats.alerts();
+        long badSeconds = badPostureStats.badSeconds();
 
         
 
-        for (AnalysisEvent event : events) {
-            if (event.getEventType() == EventType.BAD_POSTURE) {
-                if (isInPeriod(event.getEventAt(), from, to)) {
-                    alerts++;
-                }
-
-                if (badStartedAt == null) {
-                    badStartedAt = event.getEventAt();
-                }
-            }
-
-            if (event.getEventType() == EventType.GOOD_POSTURE && badStartedAt != null) {
-                badSeconds += calculateClippedSeconds(badStartedAt, event.getEventAt(), from, to);
-                badStartedAt = null;
-            }
-        }
-
-        // 아직 GOOD_POSTURE가 없다면 현재 시간까지 거북목 상태로 계산합니다.
-        if (badStartedAt != null) {
-            badSeconds += calculateClippedSeconds(badStartedAt, to, from, to);
-        }
-
+        // 종료된 세션의 마지막 BAD_POSTURE는 세션 종료 시각까지만 반영합니다.
         // 추가: 바른 자세 비율 계산의 기준 시간을 실제 측정 세션 시간 합계로 계산합니다.
         long totalSeconds = calculateTotalMeasureSeconds(analyses, from, to);
         long goodSeconds = Math.max(0, totalSeconds - badSeconds);
@@ -195,7 +172,7 @@ public class MonitorStatsService {
         // 추가: 차트/로그 데이터도 요청 기간의 측정 시작~종료 시간 기준으로 채웁니다.
         List<TimeBucket> buckets = createDayBuckets(analyses, from, to);
         List<Long> totalSecondsByBucket = calculateTotalSecondsByBucket(analyses, buckets, to);
-        List<Long> badSecondsByBucket = calculateBadSecondsByBucket(events, buckets, to);
+        List<Long> badSecondsByBucket = calculateBadSecondsByBucket(events, analyses, buckets, to);
         dto.setLabels(createLabels(buckets));
         dto.setTotalHours(toHours(totalSecondsByBucket));
         dto.setGoodHours(calculateGoodHours(totalSecondsByBucket, badSecondsByBucket));
@@ -414,6 +391,51 @@ public class MonitorStatsService {
     }
 
     // 추가: 측정 세션이 각 차트 구간과 겹치는 시간을 합산합니다.
+    private BadPostureStats calculateBadPostureStats(
+            List<AnalysisEvent> events,
+            List<Analysis> analyses,
+            LocalDateTime from,
+            LocalDateTime to
+    ) {
+        List<AnalysisEvent> sortedEvents = new ArrayList<>(events);
+        sortedEvents.sort(Comparator.comparing(AnalysisEvent::getEventAt));
+
+        int alerts = 0;
+        long badSeconds = 0;
+
+        for (Analysis analysis : analyses) {
+            LocalDateTime sessionEnd = analysis.getEndedAt() == null ? to : analysis.getEndedAt();
+            LocalDateTime badStartedAt = null;
+
+            for (AnalysisEvent event : sortedEvents) {
+                if (!analysis.getId().equals(event.getAnalysisId())) {
+                    continue;
+                }
+
+                if (event.getEventType() == EventType.BAD_POSTURE) {
+                    if (isInPeriod(event.getEventAt(), from, to)) {
+                        alerts++;
+                    }
+                    if (badStartedAt == null) {
+                        badStartedAt = event.getEventAt();
+                    }
+                }
+
+                if (event.getEventType() == EventType.GOOD_POSTURE && badStartedAt != null) {
+                    badSeconds += calculateClippedSeconds(badStartedAt, event.getEventAt(), from, to);
+                    badStartedAt = null;
+                }
+            }
+
+            // Ended sessions must not keep adding BAD time after their endedAt.
+            if (badStartedAt != null) {
+                badSeconds += calculateClippedSeconds(badStartedAt, sessionEnd, from, to);
+            }
+        }
+
+        return new BadPostureStats(alerts, badSeconds);
+    }
+
     private List<Long> calculateTotalSecondsByBucket(
             List<Analysis> analyses,
             List<TimeBucket> buckets,
@@ -437,25 +459,36 @@ public class MonitorStatsService {
     // 추가: 거북목 상태가 각 차트 구간에 얼마나 지속됐는지 합산합니다.
     private List<Long> calculateBadSecondsByBucket(
             List<AnalysisEvent> events,
+            List<Analysis> analyses,
             List<TimeBucket> buckets,
             LocalDateTime now
     ) {
         List<Long> secondsByBucket = new ArrayList<>(Collections.nCopies(buckets.size(), 0L));
-        LocalDateTime badStartedAt = null;
+        List<AnalysisEvent> sortedEvents = new ArrayList<>(events);
+        sortedEvents.sort(Comparator.comparing(AnalysisEvent::getEventAt));
 
-        for (AnalysisEvent event : events) {
-            if (event.getEventType() == EventType.BAD_POSTURE && badStartedAt == null) {
-                badStartedAt = event.getEventAt();
+        for (Analysis analysis : analyses) {
+            LocalDateTime sessionEnd = analysis.getEndedAt() == null ? now : analysis.getEndedAt();
+            LocalDateTime badStartedAt = null;
+
+            for (AnalysisEvent event : sortedEvents) {
+                if (!analysis.getId().equals(event.getAnalysisId())) {
+                    continue;
+                }
+
+                if (event.getEventType() == EventType.BAD_POSTURE && badStartedAt == null) {
+                    badStartedAt = event.getEventAt();
+                }
+
+                if (event.getEventType() == EventType.GOOD_POSTURE && badStartedAt != null) {
+                    addSecondsByBucket(secondsByBucket, buckets, badStartedAt, event.getEventAt());
+                    badStartedAt = null;
+                }
             }
 
-            if (event.getEventType() == EventType.GOOD_POSTURE && badStartedAt != null) {
-                addSecondsByBucket(secondsByBucket, buckets, badStartedAt, event.getEventAt());
-                badStartedAt = null;
+            if (badStartedAt != null) {
+                addSecondsByBucket(secondsByBucket, buckets, badStartedAt, sessionEnd);
             }
-        }
-
-        if (badStartedAt != null) {
-            addSecondsByBucket(secondsByBucket, buckets, badStartedAt, now);
         }
 
         return secondsByBucket;
@@ -607,6 +640,8 @@ public class MonitorStatsService {
     private record TimeBucket(String label, LocalDateTime from, LocalDateTime to) {
     }
 
+    private record BadPostureStats(int alerts, long badSeconds) {
+    }
 
 
 }
