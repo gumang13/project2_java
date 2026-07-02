@@ -4,7 +4,7 @@ import com.setting.dto.ExPostureBenchmarkResponse;
 import com.setting.dto.ExPostureCoachingResponse;
 import com.setting.dto.ExPostureDailyResponse;
 import com.stats.entity.DailyStats;
-import com.stats.repository.DailyStatsRepository;
+import com.setting.repository.ExPostureStatsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ExPostureStatsService {
 
-    private final DailyStatsRepository dailyStatsRepository;
+    private final ExPostureStatsRepository statsRepository;
 
     private static final int DEFAULT_RANGE_DAYS = 30;
     private static final int MAX_PER_PAGE = 100;
@@ -39,7 +39,7 @@ public class ExPostureStatsService {
     // ① 나 vs 전체 평균
     public ExPostureBenchmarkResponse benchmark(Long memberId, LocalDate from, LocalDate to) {
         LocalDate[] range = resolveRange(from, to);
-        List<DailyStats> all = dailyStatsRepository.findByStatDateBetween(startOf(range[0]), endOf(range[1]));
+        List<DailyStats> all = statsRepository.findByStatDateBetween(startOf(range[0]), endOf(range[1]));
 
         Map<Long, long[]> sums = memberSums(all);      // memberId -> [goodSec, totalSec]
         List<Double> ratios = memberRatios(sums);      // 회원별 좋은 자세율(%)
@@ -66,7 +66,7 @@ public class ExPostureStatsService {
         int safePage = Math.max(page, 1);
         int safePerPage = Math.min(Math.max(perPage, 1), MAX_PER_PAGE);
 
-        List<DailyStats> mineRows = dailyStatsRepository.findByMemberIdAndStatDateBetween(
+        List<DailyStats> mineRows = statsRepository.findByMemberIdAndStatDateBetween(
                 memberId, startOf(range[0]), endOf(range[1]));
 
         // 날짜별 집계 (같은 날 여러 행 방어), 최신순 정렬
@@ -99,7 +99,7 @@ public class ExPostureStatsService {
     // ③ 코칭 판정
     public ExPostureCoachingResponse coaching(Long memberId, LocalDate from, LocalDate to, int notiThreshold) {
         LocalDate[] range = resolveRange(from, to);
-        List<DailyStats> mineRows = dailyStatsRepository.findByMemberIdAndStatDateBetween(
+        List<DailyStats> mineRows = statsRepository.findByMemberIdAndStatDateBetween(
                 memberId, startOf(range[0]), endOf(range[1]));
 
         long good = 0, total = 0, noti = 0;
@@ -133,7 +133,7 @@ public class ExPostureStatsService {
     // ───────────── 내부 유틸 ─────────────
 
     private double populationAvg(LocalDate from, LocalDate to) {
-        List<DailyStats> all = dailyStatsRepository.findByStatDateBetween(startOf(from), endOf(to));
+        List<DailyStats> all = statsRepository.findByStatDateBetween(startOf(from), endOf(to));
         return average(memberRatios(memberSums(all)));
     }
 
