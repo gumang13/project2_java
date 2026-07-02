@@ -28,4 +28,8 @@ public interface ExerciseStatsRepository extends JpaRepository<ExerciseSession, 
             Long memberId,
             SessionStatus status
     );
+
+    List<ExerciseSession> findByMemberId(Long memberId);
+
+    void deleteByMemberId(Long memberId);
 }
