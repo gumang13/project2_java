@@ -38,7 +38,7 @@ public class AuthController {
             HttpServletResponse response
     ) {
         try {
-            // 아이디/비밀번호 검증: 실패하면 AuthenticationException 발생
+            // 아이디/비번 검증 (틀리면 예외 발생)
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(req.getEmail(), req.getPassword()));
         } catch (AuthenticationException e) {
@@ -49,7 +49,7 @@ public class AuthController {
                 .orElseThrow(() -> new RuntimeException("회원 정보를 찾을 수 없습니다."))
                 .getId();
 
-        // API 요청에 사용할 Access Token 발급
+        // 통과하면 토큰 발급
         String token = tokenProvider.createToken(userId, req.getEmail());
 
         // 로그인 시 기존 Refresh Token을 모두 삭제하여 한 계정당 하나의 세션만 유지
