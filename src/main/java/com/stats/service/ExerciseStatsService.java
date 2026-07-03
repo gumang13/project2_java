@@ -220,8 +220,17 @@ public class ExerciseStatsService {
 
     private List<ExerciseCalendarResponse> buildCalendar(String period, List<ExerciseSession> sessions) {
         LocalDate today = LocalDate.now();
-        LocalDate fromDate = period.equals("month") ? today.minusDays(29) : today.minusDays(6);
-        int days = period.equals("month") ? 30 : 7;
+        //캘린더 
+        LocalDate fromDate;
+        int days;
+
+        if (period.equals("month")) {
+            fromDate = today.withDayOfMonth(1);
+            days = today.lengthOfMonth();
+        } else {
+            fromDate = today.minusDays(today.getDayOfWeek().getValue() - 1);
+            days = 7;
+        }
 
         Map<LocalDate, Long> countByDate = sessions.stream()
                 .filter(session -> session.getStartedAt() != null)
