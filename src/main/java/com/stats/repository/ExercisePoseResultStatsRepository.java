@@ -12,4 +12,6 @@ public interface ExercisePoseResultStatsRepository extends JpaRepository<PoseRes
 
     // 통계 탭: 세션 하나의 자세별 결과를 조회합니다.
     List<PoseResult> findBySessionId(Long sessionId);
+
+    void deleteBySessionIdIn(List<Long> sessionIds);
 }

@@ -12,6 +12,9 @@ import com.setting.repository.SettingPaymentRepository;
 import com.setting.repository.SettingRepository;
 import com.setting.repository.SettingSubscriptionRepository;
 import com.stats.repository.DailyStatsRepository;
+import com.stats.repository.ExercisePoseResultStatsRepository;
+import com.stats.repository.ExerciseStatsRepository;
+import com.stretch.entity.ExerciseSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -39,6 +42,9 @@ public class AccountSettingService {
     private final SettingSubscriptionRepository settingSubscriptionRepository;
     private final SettingPaymentRepository settingPaymentRepository;
     private final SettingPaymentMethodRepository settingPaymentMethodRepository;
+    private final ExerciseStatsRepository exerciseStatsRepository;
+    private final ExercisePoseResultStatsRepository exercisePoseResultStatsRepository;
+
 
     // memberId로 회원을 찾아 계정관리 화면에 보여줄 정보를 만듭니다.
     public AccountInfoResponse getAccountInfo(Long memberId) {
@@ -173,12 +179,22 @@ public class AccountSettingService {
     //위에 deletStats 연결 - 이 회원이 가진 분석기록 조회 후 비어있지 않으면 삭제
     private void deleteStats(Long memberId) {
         List<Long> analysisIds = analysisRepository.findIdsByMemberId(memberId);
+        List<Long> exerciseSessionIds = exerciseStatsRepository.findByMemberId(memberId)
+                .stream()
+                .map(ExerciseSession::getId)
+                .toList();
 
         if (!analysisIds.isEmpty()) {
             analysisEventRepository.deleteByAnalysisIdIn(analysisIds);
         }
         analysisRepository.deleteByMemberId(memberId);
         dailyStatsRepository.deleteByMemberId(memberId);
+
+        if (!exerciseSessionIds.isEmpty()) {
+            exercisePoseResultStatsRepository.deleteBySessionIdIn(exerciseSessionIds);
+        }
+        exerciseStatsRepository.deleteByMemberId(memberId);
+
     }
     //계정 탈퇴(삭제) 진행 memberId랑 이어진 데이터들 삭제(통계데이터초기화(삭제) 메서드도 위에서 가져와서넣음)
     @Transactional
