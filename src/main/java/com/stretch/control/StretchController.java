@@ -10,6 +10,7 @@ import com.stretch.dto.StretchSessionStartResponse;
 import com.stretch.service.StretchService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,6 +44,14 @@ public class StretchController {
             @Valid @RequestBody RoutineSaveRequest request
     ) {
         return stretchService.saveMyRoutine(memberId, request);
+    }
+
+    @DeleteMapping("/routines/{routineId}")
+    public void deleteMyRoutine(
+            @AuthenticationPrincipal Long memberId,
+            @PathVariable Long routineId
+    ) {
+        stretchService.deleteMyRoutine(memberId, routineId);
     }
 
     @PostMapping("/sessions")

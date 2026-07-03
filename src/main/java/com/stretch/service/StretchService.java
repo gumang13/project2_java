@@ -63,6 +63,7 @@ public class StretchService {
     public List<PresetResponse> getMyRoutines(Long memberId) {
         return exerciseRoutineRepository.findByMemberIdOrderByUpdatedAtDesc(memberId)
                 .stream()
+                .sorted((a, b) -> Integer.compare(resolveSlotNo(a), resolveSlotNo(b)))
                 .map(this::toPresetResponse)
                 .toList();
     }
@@ -74,13 +75,15 @@ public class StretchService {
             throw new IllegalArgumentException("At least one valid pose is required.");
         }
 
-        ExerciseRoutine routine = resolveRoutineForSave(memberId, request.getRoutineId());
+        Integer slotNo = normalizeSlotNo(request.getSlotNo());
+        ExerciseRoutine routine = resolveRoutineForSave(memberId, request.getRoutineId(), slotNo);
         routine.setMemberId(memberId);
         routine.setCategory(request.getCategory() == null ? ExerciseCategory.STRETCH : request.getCategory());
         routine.setName(request.getName().trim());
         routine.setDescription(request.getDescription());
         routine.setDifficulty(request.getDifficulty());
         routine.setEstSeconds(poses.stream().mapToInt(ExercisePose::getHoldSec).sum());
+        routine.setSlotNo(slotNo);
 
         ExerciseRoutine saved = exerciseRoutineRepository.save(routine);
         routinePoseRepository.deleteByRoutineId(saved.getId());
@@ -93,6 +96,18 @@ public class StretchService {
         }
 
         return toPresetResponse(saved);
+    }
+
+    @Transactional
+    public void deleteMyRoutine(Long memberId, Long routineId) {
+        ExerciseRoutine routine = exerciseRoutineRepository.findById(routineId)
+                .orElseThrow(() -> new IllegalArgumentException("Routine not found."));
+        if (!Objects.equals(routine.getMemberId(), memberId)) {
+            throw new IllegalArgumentException("Cannot delete another member's routine.");
+        }
+
+        routinePoseRepository.deleteByRoutineId(routineId);
+        exerciseRoutineRepository.delete(routine);
     }
 
     @Transactional
@@ -213,9 +228,11 @@ public class StretchService {
         return poseKeys.stream().map(poseMap::get).toList();
     }
 
-    private ExerciseRoutine resolveRoutineForSave(Long memberId, Long routineId) {
+    private ExerciseRoutine resolveRoutineForSave(Long memberId, Long routineId, Integer slotNo) {
         if (routineId == null) {
-            return new ExerciseRoutine();
+            return slotNo == null
+                    ? new ExerciseRoutine()
+                    : exerciseRoutineRepository.findByMemberIdAndSlotNo(memberId, slotNo).orElseGet(ExerciseRoutine::new);
         }
 
         ExerciseRoutine routine = exerciseRoutineRepository.findById(routineId)
@@ -224,6 +241,29 @@ public class StretchService {
             throw new IllegalArgumentException("Cannot update another member's routine.");
         }
         return routine;
+    }
+
+    private Integer normalizeSlotNo(Integer slotNo) {
+        if (slotNo == null || slotNo < 1 || slotNo > 5) {
+            return null;
+        }
+        return slotNo;
+    }
+
+    private int resolveSlotNo(ExerciseRoutine routine) {
+        if (routine.getSlotNo() != null) {
+            return routine.getSlotNo();
+        }
+
+        String name = routine.getName();
+        if (name != null && name.startsWith("루틴 ")) {
+            try {
+                return Integer.parseInt(name.substring(3).trim());
+            } catch (NumberFormatException ignored) {
+                return 99;
+            }
+        }
+        return 99;
     }
 
     private List<String> normalizePoseKeys(List<String> poseKeys) {
@@ -261,6 +301,7 @@ public class StretchService {
                 .name(routine.getName())
                 .description(routine.getDescription())
                 .estSeconds(routine.getEstSeconds())
+                .slotNo(resolveSlotNo(routine))
                 .poses(poses)
                 .build();
     }

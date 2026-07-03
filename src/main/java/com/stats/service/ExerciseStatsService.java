@@ -28,6 +28,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -35,6 +36,14 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ExerciseStatsService {
+
+    private static final Set<String> YOGA_POSE_KEYS = Set.of(
+            "mountain_pose",
+            "warrior_ii_pose",
+            "triangle_pose",
+            "tree_pose",
+            "eagle_pose"
+    );
 
     private final ExerciseStatsRepository exerciseStatsRepository;
     private final ExercisePoseResultStatsRepository exercisePoseResultStatsRepository;
@@ -66,7 +75,7 @@ public class ExerciseStatsService {
                 .bestDailyPoses(calculateBestDailyPoses(completedSessions))
                 .minutes(calculateTotalMinutes(completedSessions))
                 .completion(calculateCompletionRate(sessions, completedSessions))
-                .type(buildExerciseType(completedSessions, routineMap))
+                .type(buildExerciseType(completedSessions, routineMap, poseResults, poseMap))
                 .cal(buildCalendar(period, completedSessions))
                 .coaching(buildCoaching(poseResults, poseMap, completedSessions.size()))
                 .logs(buildLogs(memberId, from, to, routineMap))
@@ -194,20 +203,24 @@ public class ExerciseStatsService {
 
     private ExerciseTypeResponse buildExerciseType(
             List<ExerciseSession> sessions,
-            Map<Long, ExerciseRoutine> routineMap
+            Map<Long, ExerciseRoutine> routineMap,
+            List<PoseResult> poseResults,
+            Map<Long, ExercisePose> poseMap
     ) {
         int stretch = 0;
         int yoga = 0;
+        Map<Long, List<PoseResult>> resultsBySession = poseResults.stream()
+                .collect(Collectors.groupingBy(PoseResult::getSessionId));
 
         for (ExerciseSession session : sessions) {
-            ExerciseRoutine routine = routineMap.get(session.getRoutineId());
-            if (routine == null || routine.getCategory() == null) {
-                continue;
-            }
-
-            if (routine.getCategory() == ExerciseCategory.STRETCH) {
+            ExerciseCategory category = resolveExerciseCategory(
+                    routineMap.get(session.getRoutineId()),
+                    resultsBySession.getOrDefault(session.getId(), List.of()),
+                    poseMap
+            );
+            if (category == ExerciseCategory.STRETCH) {
                 stretch++;
-            } else if (routine.getCategory() == ExerciseCategory.YOGA) {
+            } else if (category == ExerciseCategory.YOGA) {
                 yoga++;
             }
         }
@@ -216,6 +229,29 @@ public class ExerciseStatsService {
                 .stretch(stretch)
                 .yoga(yoga)
                 .build();
+    }
+
+    private ExerciseCategory resolveExerciseCategory(
+            ExerciseRoutine routine,
+            List<PoseResult> poseResults,
+            Map<Long, ExercisePose> poseMap
+    ) {
+        if (routine != null && routine.getCategory() != null) {
+            return routine.getCategory();
+        }
+
+        List<String> poseKeys = poseResults.stream()
+                .map(result -> poseMap.get(result.getPoseId()))
+                .filter(Objects::nonNull)
+                .map(ExercisePose::getPoseKey)
+                .toList();
+        if (poseKeys.isEmpty()) {
+            return ExerciseCategory.STRETCH;
+        }
+
+        return poseKeys.stream().allMatch(YOGA_POSE_KEYS::contains)
+                ? ExerciseCategory.YOGA
+                : ExerciseCategory.STRETCH;
     }
 
     private List<ExerciseCalendarResponse> buildCalendar(String period, List<ExerciseSession> sessions) {

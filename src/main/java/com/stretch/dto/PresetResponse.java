@@ -14,5 +14,6 @@ public class PresetResponse {
     private String name;
     private String description;
     private int estSeconds;
+    private Integer slotNo;
     private List<PoseResponse> poses;
 }

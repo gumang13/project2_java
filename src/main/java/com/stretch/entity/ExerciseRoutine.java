@@ -37,6 +37,9 @@ public class ExerciseRoutine {
     @Column
     private int estSeconds;
 
+    @Column
+    private Integer slotNo;
+
     @CreatedDate
     private LocalDateTime createdAt;
 

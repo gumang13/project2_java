@@ -19,6 +19,8 @@ public class RoutineSaveRequest {
 
     private int difficulty = 1;
 
+    private Integer slotNo;
+
     private List<Long> poseIds;
 
     private List<String> poseKeys;
