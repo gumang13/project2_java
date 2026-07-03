@@ -44,6 +44,18 @@ public class AccountSettingController {
             return ApiResponse.error(e.getMessage());
         }
     }
+    //거주지 수정 api
+    @PostMapping("/region")
+    public ApiResponse<AccountInfoResponse> updateRegion(
+            @AuthenticationPrincipal Long memberId,
+            @RequestBody AccountUpdateRequest request
+    ) {
+        try {
+            return ApiResponse.success(accountSettingService.updateRegion(memberId, request));
+        } catch (IllegalArgumentException e) {
+            return ApiResponse.error(e.getMessage());
+        }
+    }
 
     // 계정관리 화면에서 이메일을 수정할 때 호출하는 API입니다.
     // 요청 body 예시: { "email": "new@example.com" }

@@ -29,6 +29,9 @@ public class MemberService {
         member.setPassword(passwordEncoder.encode(memberDto.getPassword()));
         member.setName(memberDto.getName());
         member.setPlan(Plan.FREE);
+        member.setBirthYear(memberDto.getBirthYear());
+        member.setGender(memberDto.getGender());
+        member.setRegion(memberDto.getRegion());
 
         memberRepository.save(member);
 

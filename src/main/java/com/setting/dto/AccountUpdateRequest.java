@@ -6,6 +6,9 @@ public record AccountUpdateRequest(
         String name,
         String email,
         String password,
-        String newPassword
+        String newPassword,
+        Integer birthYear,
+        String gender,
+        String region
 ) {
 }
