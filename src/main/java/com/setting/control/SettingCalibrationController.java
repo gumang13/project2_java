@@ -13,6 +13,8 @@ import com.setting.dto.CalibrationSessionResultRequest;
 // 캘리브레이션 세션 Dto
 import com.setting.dto.CalibrationSessionStartResponse;
 
+import java.util.List;
+
 
 
 @RestController // JSON 응답을 반환하는 컨트롤러
@@ -65,12 +67,12 @@ public class SettingCalibrationController {
 
     // 캘리브레이션 기준값 조회
     @GetMapping("/")
-    public ApiResponse<SettingCalibrationResponse> getCalibration(
+    public ApiResponse<List<SettingCalibrationResponse>> getCalibrations(
             @AuthenticationPrincipal Long memberId
     ) {
         try {
-            SettingCalibrationResponse response =
-                    settingCalibrationService.getCalibration(memberId);
+            List<SettingCalibrationResponse> response =
+                    settingCalibrationService.getCalibrations(memberId);
 
             return ApiResponse.success(response);
         } catch (IllegalArgumentException e) {

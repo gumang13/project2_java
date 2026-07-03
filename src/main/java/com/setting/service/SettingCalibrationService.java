@@ -15,6 +15,8 @@ import com.setting.dto.CalibrationSessionStartResponse;
 import com.setting.entity.SettingCalibrationSession;
 import com.setting.repository.SettingCalibrationSessionRepository;
 
+import java.util.List;
+
 @Service // Spring이 Service 객체로 관리하게 해줌
 @RequiredArgsConstructor // final 필드를 생성자로 자동 주입
 @Transactional(readOnly = true) // 기본은 조회 전용 트랜잭션
@@ -25,10 +27,11 @@ public class SettingCalibrationService {
     private final AnalysisRepository analysisRepository; // 분석 세션id로 memberid 조회
 
     // 회원 ID로 캘리브레이션 기준값 조회
-    public SettingCalibrationResponse getCalibration(Long memberId) {
-        return settingCalibrationRepository.findByMemberId(memberId)
-                .map(SettingCalibrationResponse::from) // 데이터가 있으면 Response로 변환
-                .orElseGet(() -> SettingCalibrationResponse.empty(memberId)); // 없으면 빈 응답
+    public List<SettingCalibrationResponse> getCalibrations(Long memberId) {
+        return settingCalibrationRepository.findAllByMemberId(memberId)
+                .stream()
+                .map(SettingCalibrationResponse::from)
+                .toList();
     }
 
     // JWT에서 꺼낸 memberId로 캘리브레이션 세션을 만들고, calibrationSessionId를 반환해
