@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
@@ -22,6 +23,11 @@ import org.springframework.transaction.annotation.Transactional;
 import com.analysis.dto.AnalysisEventSaveRequest;
 import com.analysis.entity.AnalysisEvent;
 import com.analysis.repository.AnalysisEventRepository;
+
+// 이벤트 조회 메서드
+import com.analysis.dto.AnalysisEventLogResponse;
+
+
 
 @Service
 @RequiredArgsConstructor
@@ -83,6 +89,33 @@ public class AnalysisService {
         event.setEventAt(request.eventAt());
 
         analysisEventRepository.save(event);
+    }
+
+    // 거북목 분석페이지 - 이벤트 로그 조회
+    @Transactional(readOnly = true)
+    public List<AnalysisEventLogResponse> getTodayEventLog(Long memberId) {
+        LocalDateTime from = LocalDate.now().atStartOfDay();   // 오늘 00:00
+        LocalDateTime to = from.plusDays(1);                   // 내일 00:00
+
+        // 1) 회원의 '오늘' 분석 세션 id 목록
+        List<Long> analysisIds = analysisRepository
+                .findByMemberIdAndPeriodOverlap(memberId, from, to)
+                .stream()
+                .map(Analysis::getId)
+                .toList();
+
+        if (analysisIds.isEmpty()) {
+            return List.of();   // 오늘 세션 없으면 빈 목록 (빈 IN 쿼리 방지)
+        }
+
+        // 2) 그 세션들의 오늘 이벤트 → 알림(BAD)만, 최신순, DTO로 변환
+        return analysisEventRepository
+                .findByAnalysisIdInAndEventAtBetween(analysisIds, from, to)
+                .stream()
+                .filter(e -> e.getEventType() == EventType.BAD_POSTURE)         // 거북목 알림만
+                .sorted(Comparator.comparing(AnalysisEvent::getEventAt).reversed()) // 최신 먼저
+                .map(e -> new AnalysisEventLogResponse(e.getEventType(), e.getEventAt()))
+                .toList();
     }
 
     private void saveDailyStats(Analysis analysis) {

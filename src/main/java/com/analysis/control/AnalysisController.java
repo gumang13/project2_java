@@ -8,11 +8,17 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.GetMapping;
+import java.util.List;
 
 import com.analysis.dto.AnalysisSessionEndRequest;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import com.analysis.dto.AnalysisEventSaveRequest; // 분석 이벤트 저장 요청
+
+import com.analysis.dto.AnalysisEventLogResponse; // 분석 이벤트 조회 응답
+
+
 
 @RestController
 @RequestMapping("/api/analysis-sessions")
@@ -54,6 +60,14 @@ public class AnalysisController {
     ) {
         analysisService.saveEvent(request);
         return ApiResponse.success(null);
+    }
+
+    // 오늘 이벤트 로그 조회 (프론트 우측 하단 표시용)
+    @GetMapping("/events/today")
+    public ApiResponse<List<AnalysisEventLogResponse>> todayEventLog(
+            @AuthenticationPrincipal Long memberId
+    ) {
+        return ApiResponse.success(analysisService.getTodayEventLog(memberId));
     }
 
 }
