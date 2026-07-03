@@ -19,11 +19,11 @@ public class Member {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(unique = true,nullable = false)
+    @Column(nullable = false)
     private String name;
     @Column(nullable = false)
     private String password;
-    @Column
+    @Column(unique =true)
     private String email;
     @Enumerated(EnumType.STRING)
     private Plan plan;

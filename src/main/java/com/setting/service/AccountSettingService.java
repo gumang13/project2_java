@@ -78,6 +78,25 @@ public class AccountSettingService {
         member.setEmail(email);
         return createAccountInfoResponse(member);
     }
+    //거주지 업데이트 
+    @Transactional
+    public AccountInfoResponse updateRegion(Long memberId, AccountUpdateRequest request) {
+        Member member = findMember(memberId);
+
+        String region = normalizeRegion(request.region());
+        member.setRegion(region);
+
+        return createAccountInfoResponse(member);
+    }
+    //DB 저장전에 거주지 값이 비어있지 않는지 확인하고, 빈공백없이 깨끗한 문자열로 바꿔주는 함수
+    private String normalizeRegion(String region) {
+        if (isBlank(region)) {
+            throw new IllegalArgumentException();
+        }
+        //거주지 앞뒤 공백 제거하고 저장
+        return region.trim();
+    }
+
 
     @Transactional
     public Boolean updatePassword(Long memberId, AccountUpdateRequest request) {
