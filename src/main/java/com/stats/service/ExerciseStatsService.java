@@ -212,16 +212,26 @@ public class ExerciseStatsService {
         Map<Long, List<PoseResult>> resultsBySession = poseResults.stream()
                 .collect(Collectors.groupingBy(PoseResult::getSessionId));
 
-        for (ExerciseSession session : sessions) {
-            ExerciseCategory category = resolveExerciseCategory(
-                    routineMap.get(session.getRoutineId()),
-                    resultsBySession.getOrDefault(session.getId(), List.of()),
-                    poseMap
-            );
-            if (category == ExerciseCategory.STRETCH) {
-                stretch++;
-            } else if (category == ExerciseCategory.YOGA) {
+        for (PoseResult result : poseResults) {
+            ExercisePose pose = poseMap.get(result.getPoseId());
+            if (pose != null && YOGA_POSE_KEYS.contains(pose.getPoseKey())) {
                 yoga++;
+            } else {
+                stretch++;
+            }
+        }
+
+        for (ExerciseSession session : sessions) {
+            if (resultsBySession.containsKey(session.getId())) {
+                continue;
+            }
+
+            ExerciseRoutine routine = routineMap.get(session.getRoutineId());
+            int count = Math.max(1, session.getCompletedPoses());
+            if (routine != null && routine.getCategory() == ExerciseCategory.YOGA) {
+                yoga += count;
+            } else {
+                stretch += count;
             }
         }
 
@@ -229,29 +239,6 @@ public class ExerciseStatsService {
                 .stretch(stretch)
                 .yoga(yoga)
                 .build();
-    }
-
-    private ExerciseCategory resolveExerciseCategory(
-            ExerciseRoutine routine,
-            List<PoseResult> poseResults,
-            Map<Long, ExercisePose> poseMap
-    ) {
-        if (routine != null && routine.getCategory() != null) {
-            return routine.getCategory();
-        }
-
-        List<String> poseKeys = poseResults.stream()
-                .map(result -> poseMap.get(result.getPoseId()))
-                .filter(Objects::nonNull)
-                .map(ExercisePose::getPoseKey)
-                .toList();
-        if (poseKeys.isEmpty()) {
-            return ExerciseCategory.STRETCH;
-        }
-
-        return poseKeys.stream().allMatch(YOGA_POSE_KEYS::contains)
-                ? ExerciseCategory.YOGA
-                : ExerciseCategory.STRETCH;
     }
 
     private List<ExerciseCalendarResponse> buildCalendar(String period, List<ExerciseSession> sessions) {
