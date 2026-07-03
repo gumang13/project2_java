@@ -12,6 +12,8 @@ public class SettingCalibrationResponse {
 
     private Long calibrationId; // 캘리브레이션 ID
 
+    private String cameraPosition;
+
     private Float goodAngle; // 정자세 기준 각도
 
     private Float turtleThreshold; // 거북목 판정 임계 각도
@@ -25,6 +27,7 @@ public class SettingCalibrationResponse {
         return SettingCalibrationResponse.builder()
                 .memberId(calibration.getMemberId())
                 .calibrationId(calibration.getId())
+                .cameraPosition(calibration.getCameraPosition())
                 .goodAngle(calibration.getGoodAngle())
                 .turtleThreshold(calibration.getTurtleThreshold())
                 .hasCalibration(true)
