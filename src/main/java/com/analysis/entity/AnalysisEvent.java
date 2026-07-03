@@ -24,5 +24,8 @@ public class AnalysisEvent {
 
     private LocalDateTime eventAt;
 
+    // 오픈 통계 API용 경추 각도(도). 현재 파이프라인 미저장이라 nullable — 더미로 채워 집계에 사용.
+    @Column
+    private Double angle;
 
 }
