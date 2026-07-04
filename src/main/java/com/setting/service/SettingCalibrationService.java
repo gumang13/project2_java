@@ -11,11 +11,14 @@ import com.setting.entity.SettingCalibration;
 import com.analysis.repository.AnalysisRepository; // 분석 세션id로 memberid 조회
 
 // 켈리브레이션 세션 추가
+import com.setting.dto.CalibrationSessionStartRequest;
 import com.setting.dto.CalibrationSessionStartResponse;
 import com.setting.entity.SettingCalibrationSession;
 import com.setting.repository.SettingCalibrationSessionRepository;
 
 import java.util.List;
+
+
 
 @Service // Spring이 Service 객체로 관리하게 해줌
 @RequiredArgsConstructor // final 필드를 생성자로 자동 주입
@@ -25,6 +28,8 @@ public class SettingCalibrationService {
     private final SettingCalibrationRepository settingCalibrationRepository;
     private final SettingCalibrationSessionRepository settingCalibrationSessionRepository;
     private final AnalysisRepository analysisRepository; // 분석 세션id로 memberid 조회
+    private final SettingEspDeviceService settingEspDeviceService;
+
 
     // 회원 ID로 캘리브레이션 기준값 조회
     public List<SettingCalibrationResponse> getCalibrations(Long memberId) {
@@ -34,16 +39,19 @@ public class SettingCalibrationService {
                 .toList();
     }
 
-    // JWT에서 꺼낸 memberId로 캘리브레이션 세션을 만들고, calibrationSessionId를 반환해
+    // (JWT에서 꺼낸 memberId로 캘리브레이션 세션을 만들고, calibrationSessionId를 반환해, 수정-검증 필요)
     @Transactional
-    public CalibrationSessionStartResponse startCalibrationSession(Long memberId) {
+    public CalibrationSessionStartResponse startCalibrationSession(Long memberId, CalibrationSessionStartRequest request) {
+        // ESP 세션은 요청 회원이 그 기기를 소유했는지 검증
+        if ("esp".equals(request.source())
+                && !settingEspDeviceService.isOwner(memberId, request.deviceMac())) {
+            throw new IllegalArgumentException("본인 소유의 ESP 기기가 아닙니다.");
+        }
+
         SettingCalibrationSession session = SettingCalibrationSession.builder()
                 .memberId(memberId)
                 .build();
-
-        SettingCalibrationSession savedSession =
-                settingCalibrationSessionRepository.save(session);
-
+        SettingCalibrationSession savedSession = settingCalibrationSessionRepository.save(session);
         return new CalibrationSessionStartResponse(savedSession.getId());
     }
 

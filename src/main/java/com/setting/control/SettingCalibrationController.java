@@ -12,6 +12,7 @@ import com.setting.dto.CalibrationSessionResultRequest;
 
 // 캘리브레이션 세션 Dto
 import com.setting.dto.CalibrationSessionStartResponse;
+import com.setting.dto.CalibrationSessionStartRequest;
 
 import java.util.List;
 
@@ -27,12 +28,15 @@ public class SettingCalibrationController {
     // 캘리브레이션 세션 생성
     @PostMapping("/sessions/start")
     public ApiResponse<CalibrationSessionStartResponse> startCalibrationSession(
-            @AuthenticationPrincipal Long memberId
+            @AuthenticationPrincipal Long memberId,
+            @RequestBody CalibrationSessionStartRequest request
     ) {
-        CalibrationSessionStartResponse response =
-                settingCalibrationService.startCalibrationSession(memberId);
-
-        return ApiResponse.success(response);
+        try {
+            return ApiResponse.success(
+                    settingCalibrationService.startCalibrationSession(memberId, request));
+        } catch (IllegalArgumentException e) {
+            return ApiResponse.error(e.getMessage());
+        }
     }
 
     // 캘리브레션 저장
