@@ -28,6 +28,10 @@ import com.analysis.repository.AnalysisEventRepository;
 import com.analysis.dto.AnalysisEventLogResponse;
 
 
+import com.analysis.dto.AnalysisStartRequest;
+import com.setting.service.SettingEspDeviceService;
+
+
 
 @Service
 @RequiredArgsConstructor
@@ -37,15 +41,20 @@ public class AnalysisService {
     private final AnalysisRepository analysisRepository; // 분석 세션
     private final AnalysisEventRepository analysisEventRepository; // 분석 이벤트(good, bad posture)
 
-    // DB에 분석 세션
-    public AnalysisStartResponse start(Long memberId){
-        Analysis analysis = new Analysis();
+    private final SettingEspDeviceService settingEspDeviceService;
 
+    // DB에 분석 세션
+    public AnalysisStartResponse start(Long memberId, AnalysisStartRequest request){
+        // ESP 세션은 요청 회원이 그 기기를 소유했는지 검증
+        if ("esp".equals(request.source())
+                && !settingEspDeviceService.isOwner(memberId, request.deviceMac())) {
+            throw new IllegalArgumentException("본인 소유의 ESP 기기가 아닙니다.");
+        }
+
+        Analysis analysis = new Analysis();
         analysis.setMemberId(memberId);
         analysis.setStartedAt(LocalDateTime.now());
-
         Analysis savedAnalysis = analysisRepository.save(analysis);
-
         return new AnalysisStartResponse(savedAnalysis.getId());
     }
 

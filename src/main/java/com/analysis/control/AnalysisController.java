@@ -18,6 +18,8 @@ import com.analysis.dto.AnalysisEventSaveRequest; // 분석 이벤트 저장 요
 
 import com.analysis.dto.AnalysisEventLogResponse; // 분석 이벤트 조회 응답
 
+import com.analysis.dto.AnalysisStartRequest;
+
 
 
 @RestController
@@ -31,9 +33,14 @@ public class AnalysisController {
     // /start 핸들러 메서드
     @PostMapping("/start")
     public ApiResponse<AnalysisStartResponse> start(
-            @AuthenticationPrincipal Long memberId
+            @AuthenticationPrincipal Long memberId,
+            @RequestBody AnalysisStartRequest request
     ) {
-        return ApiResponse.success(analysisService.start(memberId));
+        try {
+            return ApiResponse.success(analysisService.start(memberId, request));
+        } catch (IllegalArgumentException e) {
+            return ApiResponse.error(e.getMessage());
+        }
     }
 
     // 분석 세션 종료 요청
