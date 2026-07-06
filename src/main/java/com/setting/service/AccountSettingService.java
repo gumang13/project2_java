@@ -11,6 +11,7 @@ import com.setting.repository.SettingPaymentMethodRepository;
 import com.setting.repository.SettingPaymentRepository;
 import com.setting.repository.SettingRepository;
 import com.setting.repository.SettingSubscriptionRepository;
+import com.stats.entity.DailyStats;
 import com.stats.repository.DailyStatsRepository;
 import com.stats.repository.ExercisePoseResultStatsRepository;
 import com.stats.repository.ExerciseStatsRepository;
@@ -78,7 +79,7 @@ public class AccountSettingService {
         member.setEmail(email);
         return createAccountInfoResponse(member);
     }
-    //거주지 업데이트 
+    //거주지 업데이트
     @Transactional
     public AccountInfoResponse updateRegion(Long memberId, AccountUpdateRequest request) {
         Member member = findMember(memberId);
@@ -119,13 +120,33 @@ public class AccountSettingService {
 
     // 계정관리 화면에 필요한 추가값을 모아서 응답 DTO를 만듭니다.
     private AccountInfoResponse createAccountInfoResponse(Member member) {
-        // TODO: 통계 저장 로직이 연결되면 실제 이번 주 평균 점수로 교체합니다.
-        Double weeklyAverageScore = 0.0;
 
-        // TODO: DailyStatsRepository가 연결되면 이번 주 알림 횟수 합계로 교체합니다.
-        Integer weeklyAlertCount =500;
+        // 최근 7일간 저장된 일별 통계로 계정관리 화면의 주간 자세 점수와 알림 횟수를 계산
+        LocalDate today = LocalDate.now();
+        LocalDateTime from = today.minusDays(6).atStartOfDay();
+        LocalDateTime to = today.plusDays(1).atStartOfDay();
 
-        // 가입일 기준으로 사용 기간을 계산합니다.
+        List<DailyStats> weeklyStats =
+                dailyStatsRepository.findByMemberIdAndStatDateBetween(member.getId(), from, to);
+
+        int weeklyAlertCount = weeklyStats.stream()
+                .mapToInt(DailyStats::getNotiCount)
+                .sum();
+
+        int totalMeasureSec = weeklyStats.stream()
+                .mapToInt(DailyStats::getTotalMeasureSec)
+                .sum();
+
+        int goodPostureSec = weeklyStats.stream()
+                .mapToInt(DailyStats::getGoodPostureSec)
+                .sum();
+
+        // 전체 측정 시간 중 바른 자세 시간이 차지하는 비율을 점수로 사용합니다.
+        double weeklyAverageScore = totalMeasureSec == 0
+                ? 0.0
+                : Math.round(goodPostureSec * 100.0 / totalMeasureSec);
+
+        // 가입일 기준으로 사용 기간을 계산
         Integer usageDays = calculateUsageDays(member.getCreatedDate());
 
         // 캘리브레이션 데이터가 있으면 완료 상태로 표시합니다.
