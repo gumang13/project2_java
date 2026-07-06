@@ -4,6 +4,7 @@ import com.security.dto.ApiResponse;
 import com.setting.dto.SettingEspDeviceRegisterRequest;
 import com.setting.dto.SettingEspDeviceRenameRequest;
 import com.setting.dto.SettingEspDeviceResponse;
+import com.setting.dto.SettingEspDeviceVerifyRequest;
 import com.setting.service.SettingEspDeviceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -32,6 +33,15 @@ public class SettingEspDeviceController {
     @GetMapping("/registered-macs")
     public ApiResponse<List<String>> registeredMacs() {
         return ApiResponse.success(espDeviceService.registeredMacs());
+    }
+
+    // ESP 기기 소유 검증 — 현재 로그인 회원이 이 MAC을 지금 소유 중인가 (요가 적용 전 사용)
+    @PostMapping("/verify")
+    public ApiResponse<Boolean> verify(
+            @AuthenticationPrincipal Long memberId,
+            @RequestBody SettingEspDeviceVerifyRequest request
+    ) {
+        return ApiResponse.success(espDeviceService.isOwner(memberId, request.deviceMac()));
     }
 
     // 기기 등록 (claim 또는 수동 MAC 입력)
