@@ -23,10 +23,10 @@ jobs:
 
             docker context use default
 
-            cd /home/dw203/server/project2_java
+            cd /home/yong/server/project2_java
             GIT_SSH_COMMAND='ssh -i ~/.ssh/github_repo_key' git pull origin Developer
 
-            cd /home/dw203/server
+            cd /home/yong/server
             docker compose up -d --build springboot-server
             docker compose up -d --force-recreate nginx-server
 
