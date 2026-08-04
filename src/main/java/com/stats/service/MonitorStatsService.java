@@ -77,11 +77,21 @@ public class MonitorStatsService {
         List<Long> analysisIds = analyses.stream()
                 .map(Analysis::getId)
                 .toList();
-        List<AnalysisEvent> events = analysisIds.isEmpty()
-                ? List.of()
-                : analysisEventRepository.findByAnalysisIdIn(analysisIds);
 
-        return buildRangeStats(period, dailyStats, events, fromDate, fromDateTime, toDateTime);
+        // 로그용: 기간 안 최근 이벤트만. 6건을 쓰지만 여는 BAD 를 놓치지 않도록 여유를 둔다.
+        List<AnalysisEvent> recentEvents = analysisIds.isEmpty()
+                ? new ArrayList<>()
+                : new ArrayList<>(analysisEventRepository
+                                  .findTop20ByAnalysisIdInAndEventAtGreaterThanEqualAndEventAtLessThanOrderByEventAtDesc(
+                                          analysisIds, fromDateTime, toDateTime));
+
+        // 시간대 패턴용: DB 에서 집계. 엔티티를 만들지 않는다.
+        List<Object[]> hourlyRows = analysisIds.isEmpty()
+                ? List.of()
+                : analysisEventRepository.countBadPostureByHour(analysisIds, fromDateTime, toDateTime);
+
+        return buildRangeStats(period, dailyStats, recentEvents, hourlyRows, fromDate, fromDateTime, toDateTime);
+
     }
 
     // 추가: 측정 데이터가 없을 때도 프론트 차트가 null 때문에 깨지지 않도록 빈 응답을 만듭니다.
@@ -187,6 +197,7 @@ public class MonitorStatsService {
             String period,
             List<DailyStats> dailyStats,
             List<AnalysisEvent> events,
+            List<Object[]> hourlyRows,
             LocalDate fromDate,
             LocalDateTime from,
             LocalDateTime to
@@ -546,6 +557,22 @@ public class MonitorStatsService {
         return hourly;
     }
 
+    // 추가: week/month 는 DB 집계 결과로 시간대 패턴을 채웁니다.
+    // 엔티티를 만들지 않으므로 이벤트 건수와 무관하게 비용이 일정합니다.
+    private List<Integer> toHourlyPattern(List<Object[]> rows) {
+        List<Integer> hourly = new ArrayList<>(Collections.nCopies(10, 0));
+
+        for (Object[] row : rows) {
+            int hour = ((Number) row[0]).intValue();
+            if (hour < 9 || hour > 18) {
+                continue;
+            }
+            hourly.set(hour - 9, ((Number) row[1]).intValue());
+        }
+
+        return hourly;
+    }
+
     // 추가: 초 단위 값을 프론트 차트에서 쓰는 시간 단위로 변환합니다.
     private List<Double> toHours(List<Long> secondsByHour) {
         List<Double> hours = new ArrayList<>();
@@ -571,6 +598,8 @@ public class MonitorStatsService {
 
     // 추가: 최근 이벤트 로그를 프론트 LogDto 형태로 변환합니다.
     private List<LogDto> createLogs(List<AnalysisEvent> events, LocalDateTime from, LocalDateTime to, String period) {
+        // week/month 는 리포지토리가 최신순으로 주므로 여기서 시간순으로 되돌린다.
+        // BAD → GOOD 을 순서대로 만나야 badStartedAt 이 누적되어 지속 시간이 계산된다.
         events.sort(Comparator.comparing(AnalysisEvent::getEventAt));
 
         List<LogDto> logs = new ArrayList<>();
